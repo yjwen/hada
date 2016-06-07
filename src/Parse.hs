@@ -1,3 +1,4 @@
+module Parse (printCore) where
 {-# LANGUAGE CPP #-}
 import GHC
 import Outputable
@@ -6,26 +7,8 @@ import GHC.Paths ( libdir )
        
 import DynFlags
 
-targetFile = "B.hs"
-
-main :: IO ()
-main = do
-  res <- example
-#if __GLASGOW_HASKELL__ > 704
-  str <- runGhc (Just libdir) $ do
-           dflags <- getSessionDynFlags
-           return $ showSDoc dflags $ ppr res
-  putStrLn str
-#else
-  putStrLn $ showSDoc ( ppr res )
-#endif
-
-example =
-#if __GLASGOW_HASKELL__ > 704
+printCore targetFile =
     defaultErrorHandler defaultFatalMessager defaultFlushOut $ do
-#else
-    defaultErrorHandler defaultLogAction $do
-#endif
       runGhc (Just libdir) $ do
         dflags <- getSessionDynFlags
         let dflags' = foldl xopt_set dflags
