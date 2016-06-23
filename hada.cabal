@@ -25,3 +25,7 @@ library
 
 Test-Suite test-FixedWidth
   type: detailed-0.9
+  test-module: TestFixedWidth
+  default-language: Haskell2010
+  hs-source-dirs:      test
+  build-depends: base, Cabal > 1.9.2, hada

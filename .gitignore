@@ -2,4 +2,4 @@
 *.o
 *.hi
 *.exe
-
+dist/
