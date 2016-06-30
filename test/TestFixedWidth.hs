@@ -7,25 +7,24 @@ import FixedWidth
 import Data.Bits
 
 $(declareFW "Bit7" "Bit7" 7)
--- data Bit7 = Bit7 Int
 
-toInt (Bit7 a) = a .&. 127
-
-testToInt :: Result
-testToInt 
+testFromEnum :: Result
+testFromEnum 
   | result == ref = Pass
-  | otherwise = Fail ("Incorrect conversion to Int. result=" ++ (show $ result) ++ ", ref=" ++ (show $ ref))
-  where result = toInt $ Bit7 (128 + ref)
-        ref = 7
+  | otherwise = Fail ("Incorrect result of fromEnum. result=" ++ (show $ result) ++ ", ref=" ++ (show $ ref))
+  where ref = 7
+        testValue = Bit7 (bit 7 + ref)
+        result = fromEnum testValue
+
 
 tests :: IO [Test]
-tests = return [Test $ toIntTest]
+tests = return [Test $ enumTest]
   where
-    toIntTest = TestInstance
-      {run = return $ Finished testToInt
-      , name = "testToInt"
+    enumTest = TestInstance
+      {run = return $ Finished testFromEnum
+      , name = "testFromEnum"
       , tags = []
       , options = []
-      , setOption = \ _ _ -> Right toIntTest
+      , setOption = \ _ _ -> Right enumTest
       }
 
