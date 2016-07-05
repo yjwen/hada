@@ -16,10 +16,23 @@ declareFWType typeName conName =
 instanceHead :: String -> Name -> ([DecQ] -> DecQ)
 instanceHead classStr typeName = instanceD (cxt []) (appT (conT $ mkName classStr) (conT typeName))
 
+extendSigned :: Int -> Int -> Int
+extendSigned v width = case (testBit v (width - 1)) of
+                         True -> v .|. mask1
+                         False -> v .&. mask0
+  where mask0 = (bit width) - 1
+        mask1 = complement mask0
+
+-- Helper functions for declaring functions
+-- Function with one pattern, as: f (Con x) = expr
+funP1D :: String -> Name -> Name -> ExpQ -> DecQ
+funP1D funName con x exp = funD (mkName funName) [clause [conP con [varP x]] (normalB exp) []]
+      
 enumInstance :: Name -> Name -> Int -> DecQ
 enumInstance typeName conName bitWidth = instanceHead "Enum" typeName [toEnumD, fromEnumD] where
   toEnumD = funD (mkName "toEnum") [clause [] (normalB $ conE $ conName) []]
-  fromEnumD = funD (mkName "fromEnum") [clause [conP conName [varP x]] (normalB [| $(varE x) .&. ((bit bitWidth) - 1)|]) []] where x = mkName "x"
+  fromEnumD = funP1D "fromEnum" conName x [| extendSigned $(varE x) bitWidth |]
+    where x = mkName "x"
 
 
 
