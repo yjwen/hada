@@ -24,16 +24,24 @@ extendSigned v width = case (testBit v (width - 1)) of
         mask1 = complement mask0
 
 -- Helper functions for declaring functions
+-- Function with zero argument, as minBound = expr
+funP0D :: String -> ExpQ -> DecQ
+funP0D funName exp = funD (mkName funName) [clause [] (normalB exp) []]
+
 -- Function with one pattern, as: f (Con x) = expr
 funP1D :: String -> Name -> Name -> ExpQ -> DecQ
 funP1D funName con x exp = funD (mkName funName) [clause [conP con [varP x]] (normalB exp) []]
       
 enumInstance :: Name -> Name -> Int -> DecQ
-enumInstance typeName conName bitWidth = instanceHead "Enum" typeName [toEnumD, fromEnumD] where
-  toEnumD = funD (mkName "toEnum") [clause [] (normalB $ conE $ conName) []]
-  fromEnumD = funP1D "fromEnum" conName x [| extendSigned $(varE x) bitWidth |]
-    where x = mkName "x"
+enumInstance typeName conName bitWidth = instanceHead "Enum" typeName [toEnumD, fromEnumD]
+  where toEnumD = funP0D "toEnum" (conE conName)
+        fromEnumD = funP1D "fromEnum" conName x [| extendSigned $(varE x) bitWidth |]
+          where x = mkName "x"
 
+boundedInstance :: Name -> Name -> Int -> DecQ
+boundedInstance typeName conName bitWidth = instanceHead "Bounded" typeName [minBoundD, maxBoundD]
+  where minBoundD = funP0D "minBound" [| $(conE conName) (-(bit (bitWidth - 1))) |]
+        maxBoundD = funP0D "maxBound" [| $(conE conName) ((bit (bitWidth - 1)) - 1)|]
 
 
 declareFW :: String -> String -> Int -> DecsQ
@@ -42,4 +50,5 @@ declareFW typeStr conStr bitWidth =
          conName = mkName conStr
      typeD <- declareFWType typeName conName
      enumD <- enumInstance typeName conName bitWidth
-     return [typeD, enumD]
+     boundedD <- boundedInstance typeName conName bitWidth
+     return [typeD, enumD, boundedD]
