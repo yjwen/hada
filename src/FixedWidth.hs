@@ -11,7 +11,7 @@ declareFWType typeName conName =
   typeName -- Make the type name
   [] -- No type variable binds
   (normalC conName [strictType notStrict $ conT (mkName "Int")]) -- Only one constructor, accepts an Int type
-  [] -- No deriving
+  [mkName "Show"] -- deriving
 
 instanceHead :: String -> Name -> ([DecQ] -> DecQ)
 instanceHead classStr typeName = instanceD (cxt []) (appT (conT $ mkName classStr) (conT typeName))
@@ -43,6 +43,14 @@ boundedInstance typeName conName bitWidth = instanceHead "Bounded" typeName [min
   where minBoundD = funP0D "minBound" [| $(conE conName) (-(bit (bitWidth - 1))) |]
         maxBoundD = funP0D "maxBound" [| $(conE conName) ((bit (bitWidth - 1)) - 1)|]
 
+enumFun2 :: Enum a => (Int -> Int -> b) -> (a -> a -> b)
+enumFun2 f = \a b -> f (fromEnum a) (fromEnum b)
+
+eqInstance :: Name -> Int -> DecQ
+eqInstance typeName bitWidth = instanceHead "Eq" typeName [eqD, neqD]
+  where eqD = funP0D "==" [| enumFun2 (==) |]
+        neqD = funP0D "/=" [| enumFun2 (/=) |]
+
 
 declareFW :: String -> String -> Int -> DecsQ
 declareFW typeStr conStr bitWidth =
@@ -51,4 +59,5 @@ declareFW typeStr conStr bitWidth =
      typeD <- declareFWType typeName conName
      enumD <- enumInstance typeName conName bitWidth
      boundedD <- boundedInstance typeName conName bitWidth
-     return [typeD, enumD, boundedD]
+     eqD <- eqInstance typeName bitWidth
+     return [typeD, enumD, boundedD, eqD]
