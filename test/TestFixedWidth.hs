@@ -9,14 +9,14 @@ import Data.List
 
 $(declareFW "Bit7" "Bit7" 7)
 
-testVector :: (Int -> Bit7 -> Result) -> [(Int, Bit7)] -> Result
-testVector f [] = Pass
-testVector f ((r, t):vs) | result == Pass = testVector f vs
+testVector :: [(a, b)] -> (a -> b -> Result) -> Result
+testVector [] f = Pass
+testVector ((r, t):vs) f | result == Pass = testVector vs f
                          | otherwise = result
   where result = f r t
 
 testFromEnum :: Result
-testFromEnum = testVector f vec
+testFromEnum = testVector vec f
   where vec = [(7, Bit7 (bit 7 + 7)), (-1, Bit7 $ -1), (-64, Bit7 $ -64), (63, Bit7 63)]
         f r t | r == result = Pass
               | otherwise = Fail ("Result=" ++ (show result) ++ ", ref=" ++ (show r))
@@ -29,7 +29,7 @@ testBounded | min == -64 = Pass
         max = fromEnum (maxBound::Bit7)
 
 testEq :: Result
-testEq = case (testVector f vec, testVector f' vec') of
+testEq = case (testVector vec f, testVector vec' f') of
            (Pass, Pass) -> Pass
            (Fail msg, _) -> Fail msg
            (_, Fail msg) -> Fail msg
@@ -40,8 +40,14 @@ testEq = case (testVector f vec, testVector f' vec') of
         f' r t | Bit7 r /= t = Pass
                | otherwise = Fail ("When testing (/=): r=" ++ (show r) ++ ", t=" ++ (show t))
 
+testOrd :: Result
+testOrd = testVector vec f
+  where vec = [(Bit7 (-1), Bit7 0), (Bit7 0, Bit7 1), (Bit7 64, Bit7 (-63))]
+        f l r | compare l r == LT = Pass
+              | otherwise = Fail ((show l) ++ " is not less than " ++ (show r))
+
 tests :: IO [Test]
-tests = return [Test enumTest, Test boundedTest, Test eqTest]
+tests = return [Test enumTest, Test boundedTest, Test eqTest, Test ordTest]
   where
     enumTest = TestInstance
       {run = return $ Finished testFromEnum
@@ -63,5 +69,12 @@ tests = return [Test enumTest, Test boundedTest, Test eqTest]
       , tags = []
       , options = []
       , setOption = \ _ _ -> Right eqTest
+      }
+    ordTest = TestInstance
+      {run = return $ Finished testOrd
+      , name = "testOrd"
+      , tags = []
+      , options = []
+      , setOption = \ _ _ -> Right ordTest
       }
 
