@@ -46,6 +46,9 @@ boundedInstance typeName conName bitWidth = instanceHead "Bounded" typeName [min
 enumFun2 :: Enum a => (Int -> Int -> b) -> (a -> a -> b)
 enumFun2 f = \a b -> f (fromEnum a) (fromEnum b)
 
+closedEnumFun2 :: Enum a => (Int -> Int -> Int) -> (a -> a -> a)
+closedEnumFun2 f = \a b -> toEnum $ f (fromEnum a) (fromEnum b)
+
 eqInstance :: Name -> DecQ
 eqInstance typeName = instanceHead "Eq" typeName [eqD, neqD]
   where eqD = funP0D "==" [| enumFun2 (==) |]
@@ -54,6 +57,16 @@ eqInstance typeName = instanceHead "Eq" typeName [eqD, neqD]
 ordInstance :: Name -> DecQ
 ordInstance typeName = instanceHead "Ord" typeName [compareD]
   where compareD = funP0D "compare" [| enumFun2 compare |]
+
+numInstance :: Name -> DecQ
+numInstance typeName = instanceHead "Num" typeName [plusD, minusD, multD, absD, signumD, negateD, fromIntegerD]
+  where plusD = funP0D "+" [| closedEnumFun2 (+) |]
+        minusD = funP0D "-" [| closedEnumFun2 (-) |]
+        multD = funP0D "*" [| closedEnumFun2 (*) |]
+        absD = funP0D "abs" [| toEnum . abs . fromEnum |]
+        signumD = funP0D "signum" [| toEnum . signum . fromEnum |]
+        negateD = funP0D "negate" [| toEnum . negate . fromEnum |]
+        fromIntegerD = funP0D "fromInteger" [| toEnum . fromInteger |]
 
 declareFW :: String -> String -> Int -> DecsQ
 declareFW typeStr conStr bitWidth =
@@ -64,4 +77,5 @@ declareFW typeStr conStr bitWidth =
      boundedD <- boundedInstance typeName conName bitWidth
      eqD <- eqInstance typeName
      ordD <- ordInstance typeName
-     return [typeD, enumD, boundedD, eqD, ordD]
+     numD <- numInstance typeName
+     return [typeD, enumD, boundedD, eqD, ordD, numD]
