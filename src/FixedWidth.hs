@@ -68,6 +68,10 @@ numInstance typeName = instanceHead "Num" typeName [plusD, minusD, multD, absD, 
         negateD = funP0D "negate" [| toEnum . negate . fromEnum |]
         fromIntegerD = funP0D "fromInteger" [| toEnum . fromInteger |]
 
+realInstance :: Name -> DecQ
+realInstance typeName = instanceHead "Real" typeName [toRationalD]
+  where toRationalD = funP0D "toRational" [| toRational . fromEnum |]
+
 declareFW :: String -> String -> Int -> DecsQ
 declareFW typeStr conStr bitWidth =
   do let typeName = mkName typeStr
@@ -78,4 +82,5 @@ declareFW typeStr conStr bitWidth =
      eqD <- eqInstance typeName
      ordD <- ordInstance typeName
      numD <- numInstance typeName
-     return [typeD, enumD, boundedD, eqD, ordD, numD]
+     realD <- realInstance typeName
+     return [typeD, enumD, boundedD, eqD, ordD, numD, realD]

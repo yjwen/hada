@@ -6,6 +6,7 @@ import Distribution.TestSuite
 import FixedWidth
 import Data.Bits
 import Data.List
+import Data.Ratio
 
 $(declareFW "Bit7" "Bit7" 7)
 
@@ -71,9 +72,14 @@ testNum = findFail $ (map (f (+) "+") vecPlus) ++ (map (f (-) "-") vecMinus) ++ 
                     ]
         f' op opstr (r, t) | r == op t = Pass
                            | otherwise = Fail $ "Found " ++ opstr ++ (show t) ++ " /= " ++ (show r)
+testReal :: Result
+testReal | ref == test = Pass
+         | otherwise = Fail $ "ref=" ++ (show ref) ++ ", test=" ++ (show test)
+  where ref = 4 % 2
+        test = toRational $ Bit7 2
 
 tests :: IO [Test]
-tests = return $ map Test [enumTest, boundedTest, eqTest, ordTest, numTest]
+tests = return $ map Test [enumTest, boundedTest, eqTest, ordTest, numTest, realTest]
   where
     enumTest = TestInstance
       { run = return $ Finished testFromEnum
@@ -109,5 +115,12 @@ tests = return $ map Test [enumTest, boundedTest, eqTest, ordTest, numTest]
       , tags = []
       , options = []
       , setOption = \ _ _ -> Right numTest
+      }
+    realTest = TestInstance
+      { run = return $ Finished testReal
+      , name = "testReal"
+      , tags = []
+      , options = []
+      , setOption = \ _ _ -> Right realTest
       }
 
