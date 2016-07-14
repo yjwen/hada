@@ -78,8 +78,29 @@ testReal | ref == test = Pass
   where ref = 4 % 2
         test = toRational $ Bit7 2
 
+
+testIntegral :: Result
+testIntegral = findFail $ map f vs
+  where vs = [(7, 2), (-7, 2), (-7, -2)]
+        f (a, b) | dab /= dab' = mesg "div" dab' dab
+                 | mab /= mab' = mesg "mod" mab' mab
+                 | qab /= qab' = mesg "quot" qab' qab
+                 | rab /= rab' = mesg "rem" rab' rab
+                 | otherwise = Pass
+          where a' = Bit7 a
+                b' = Bit7 b
+                dab = Bit7 $ a `div` b
+                dab' = a' `div` b'
+                mab = Bit7 $ a `mod` b
+                mab' = a' `mod` b'
+                qab = Bit7 $ a `quot` b
+                qab' = a' `quot` b'
+                rab = Bit7 $ a `rem` b
+                rab' = a' `rem` b'
+                mesg  op ab' ab = Fail $ op ++ " " ++ (show a') ++ " " ++ (show b') ++ " should be " ++ (show $ ab) ++ ", but got " ++ (show ab')
+
 tests :: IO [Test]
-tests = return $ map Test [enumTest, boundedTest, eqTest, ordTest, numTest, realTest]
+tests = return $ map Test [enumTest, boundedTest, eqTest, ordTest, numTest, realTest, integralTest]
   where
     enumTest = TestInstance
       { run = return $ Finished testFromEnum
@@ -122,5 +143,12 @@ tests = return $ map Test [enumTest, boundedTest, eqTest, ordTest, numTest, real
       , tags = []
       , options = []
       , setOption = \ _ _ -> Right realTest
+      }
+    integralTest = TestInstance
+      { run = return $ Finished testIntegral
+      , name = "testIntegral"
+      , tags = []
+      , options = []
+      , setOption = \ _ _ -> Right integralTest
       }
 

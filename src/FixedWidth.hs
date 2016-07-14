@@ -72,6 +72,20 @@ realInstance :: Name -> DecQ
 realInstance typeName = instanceHead "Real" typeName [toRationalD]
   where toRationalD = funP0D "toRational" [| toRational . fromEnum |]
 
+closedEnumFun2Tuple2 :: Enum a => (Int -> Int -> (Int, Int)) -> (a -> a -> (a, a))
+closedEnumFun2Tuple2 f = \a b -> toTuple2 $ f (fromEnum a) (fromEnum b)
+  where toTuple2 (x, y) = (toEnum x, toEnum y)
+
+integralInstance :: Name -> DecQ
+integralInstance typeName = instanceHead "Integral" typeName [quotD, remD, divD, modD, quotRemD, divModD, toIntegerD]
+  where quotD = funP0D "quot" [| closedEnumFun2 quot |]
+        remD = funP0D "rem" [| closedEnumFun2 rem |]
+        divD = funP0D "div" [| closedEnumFun2 div |]
+        modD = funP0D "mod" [| closedEnumFun2 mod |]
+        quotRemD = funP0D "quotRem" [| closedEnumFun2Tuple2 quotRem |]
+        divModD = funP0D "divMod" [| closedEnumFun2Tuple2 divMod |]
+        toIntegerD = funP0D "toInteger" [| toInteger . fromEnum |]
+
 declareFW :: String -> String -> Int -> DecsQ
 declareFW typeStr conStr bitWidth =
   do let typeName = mkName typeStr
@@ -83,4 +97,5 @@ declareFW typeStr conStr bitWidth =
      ordD <- ordInstance typeName
      numD <- numInstance typeName
      realD <- realInstance typeName
-     return [typeD, enumD, boundedD, eqD, ordD, numD, realD]
+     integralD <- integralInstance typeName
+     return [typeD, enumD, boundedD, eqD, ordD, numD, realD, integralD]
