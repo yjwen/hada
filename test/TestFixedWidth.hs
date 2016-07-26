@@ -10,6 +10,8 @@ import Data.Ratio
 
 $(declareFW "Bit7" "Bit7" 7)
 
+$(declareUnsignedFW "U7" "U7" 7)
+
 findFail :: [Result] -> Result
 findFail rs = case find f rs of
                 Nothing -> Pass
@@ -29,6 +31,12 @@ testFromEnum = findFail $ map f vec
   where vec = [(7, Bit7 (bit 7 + 7)), (-1, Bit7 $ -1), (-64, Bit7 $ -64), (63, Bit7 63)]
         f (r, t) | r == fromEnum t =  Pass
                  | otherwise =  Fail ("Result=" ++ (show $ fromEnum t) ++ ", ref=" ++ (show r))
+
+testUFromEnum :: Result
+testUFromEnum = findFail $ map f vec
+  where vec = [(7, U7 (bit 7 + 7)), (0, U7 (bit 7)), (127, U7 127)]
+        f (r, t) | r == fromEnum t = Pass
+                 | otherwise = Fail ("Result=" ++ (show $ fromEnum t) ++ ", ref=" ++ (show r))
 
 testBounded :: Result
 testBounded | min == -64 = Pass
@@ -99,20 +107,34 @@ testIntegral = findFail $ map f vs
                 rab' = a' `rem` b'
                 mesg  op ab' ab = Fail $ op ++ " " ++ (show a') ++ " " ++ (show b') ++ " should be " ++ (show $ ab) ++ ", but got " ++ (show ab')
 
+signedTestInstance test name = Test theInstance
+  where theInstance = TestInstance { run = return $ Finished test
+                                   , name = name
+                                   , tags = ["Signed"]
+                                   , options = []
+                                   , setOption = \ _ _ -> Right theInstance
+                                   }
+unsignedTestInstance test name = Test theInstance
+  where theInstance = TestInstance { run = return $ Finished test
+                                   , name = name
+                                   , tags = ["Unsigned"]
+                                   , options = []
+                                   , setOption = \ _ _ -> Right theInstance
+                                   }
 tests :: IO [Test]
-tests = return $ map Test [enumTest, boundedTest, eqTest, ordTest, numTest, realTest, integralTest]
+tests = return $ map Test [enumTest, boundedTest, eqTest, ordTest, numTest, realTest, integralTest, enumUTest]
   where
     enumTest = TestInstance
       { run = return $ Finished testFromEnum
       , name = "testFromEnum"
-      , tags = []
+      , tags = ["Signed"]
       , options = []
       , setOption = \ _ _ -> Right enumTest
       }
     boundedTest = TestInstance
       { run = return $ Finished testBounded
       , name = "testBounded"
-      , tags = []
+      , tags = ["Signed"]
       , options = []
       , setOption = \ _ _ -> Right boundedTest
       }
@@ -151,4 +173,10 @@ tests = return $ map Test [enumTest, boundedTest, eqTest, ordTest, numTest, real
       , options = []
       , setOption = \ _ _ -> Right integralTest
       }
-
+    enumUTest = TestInstance
+      { run = return $ Finished testUFromEnum
+      , name = "testUFromEnum"
+      , tags = []
+      , options = []
+      , setOption = \ _ _ -> Right enumUTest
+      }

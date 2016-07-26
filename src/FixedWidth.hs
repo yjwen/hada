@@ -4,14 +4,20 @@ module FixedWidth where
 import Language.Haskell.TH
 import Data.Bits
 
-declareFWType :: Name -> Name -> DecQ
-declareFWType typeName conName =
+newtypeFWD :: Name -> Name -> Name -> DecQ
+newtypeFWD typeName conName baseTypeName =
   newtypeD -- newtype delcaration
   (cxt []) -- No type context
   typeName -- Make the type name
   [] -- No type variable binds
-  (normalC conName [strictType notStrict $ conT (mkName "Int")]) -- Only one constructor, accepts an Int type
+  (normalC conName [strictType notStrict $ conT baseTypeName]) -- Only one constructor, accepts an Int type
   [mkName "Show"] -- deriving
+
+declareFWType :: Name -> Name -> DecQ
+declareFWType typeName conName = newtypeFWD typeName conName $ mkName "Int"
+
+declareUnsignedFWType :: Name -> Name -> DecQ
+declareUnsignedFWType typeName conName = newtypeFWD typeName conName $ mkName "Word"
 
 instanceHead :: String -> Name -> ([DecQ] -> DecQ)
 instanceHead classStr typeName = instanceD (cxt []) (appT (conT $ mkName classStr) (conT typeName))
@@ -23,6 +29,8 @@ extendSigned v width = case (testBit v (width - 1)) of
   where mask0 = (bit width) - 1
         mask1 = complement mask0
 
+extendUnsigned :: Word -> Int -> Word
+extendUnsigned v width = v .&. (bit width - 1)
 -- Helper functions for declaring functions
 -- Function with zero argument, as minBound = expr
 funP0D :: String -> ExpQ -> DecQ
@@ -38,6 +46,11 @@ enumInstance typeName conName bitWidth = instanceHead "Enum" typeName [toEnumD, 
         fromEnumD = funP1D "fromEnum" conName x [| extendSigned $(varE x) bitWidth |]
           where x = mkName "x"
 
+enumUnsignedInstance :: Name -> Name -> Int -> DecQ
+enumUnsignedInstance typeName conName bitWidth = instanceHead "Enum" typeName [toEnumD, fromEnumD]
+  where toEnumD = funP0D "toEnum" [| $(conE conName) . toEnum |]
+        fromEnumD = funP1D "fromEnum" conName x [| fromEnum $ extendUnsigned $(varE x) bitWidth |]
+          where x = mkName "x"
 boundedInstance :: Name -> Name -> Int -> DecQ
 boundedInstance typeName conName bitWidth = instanceHead "Bounded" typeName [minBoundD, maxBoundD]
   where minBoundD = funP0D "minBound" [| $(conE conName) (-(bit (bitWidth - 1))) |]
@@ -99,3 +112,11 @@ declareFW typeStr conStr bitWidth =
      realD <- realInstance typeName
      integralD <- integralInstance typeName
      return [typeD, enumD, boundedD, eqD, ordD, numD, realD, integralD]
+
+declareUnsignedFW :: String -> String -> Int -> DecsQ
+declareUnsignedFW typeStr conStr bitWidth =
+  do let typeName = mkName typeStr
+         conName = mkName conStr
+     typeD <- declareUnsignedFWType typeName conName
+     enumD <- enumUnsignedInstance typeName conName bitWidth
+     return [typeD, enumD]
