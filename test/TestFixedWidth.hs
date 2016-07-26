@@ -107,14 +107,14 @@ testIntegral = findFail $ map f vs
                 rab' = a' `rem` b'
                 mesg  op ab' ab = Fail $ op ++ " " ++ (show a') ++ " " ++ (show b') ++ " should be " ++ (show $ ab) ++ ", but got " ++ (show ab')
 
-signedTestInstance test name = Test theInstance
+signedTestInstance (test, name) = Test theInstance
   where theInstance = TestInstance { run = return $ Finished test
                                    , name = name
                                    , tags = ["Signed"]
                                    , options = []
                                    , setOption = \ _ _ -> Right theInstance
                                    }
-unsignedTestInstance test name = Test theInstance
+unsignedTestInstance (test, name) = Test theInstance
   where theInstance = TestInstance { run = return $ Finished test
                                    , name = name
                                    , tags = ["Unsigned"]
@@ -122,61 +122,15 @@ unsignedTestInstance test name = Test theInstance
                                    , setOption = \ _ _ -> Right theInstance
                                    }
 tests :: IO [Test]
-tests = return $ map Test [enumTest, boundedTest, eqTest, ordTest, numTest, realTest, integralTest, enumUTest]
-  where
-    enumTest = TestInstance
-      { run = return $ Finished testFromEnum
-      , name = "testFromEnum"
-      , tags = ["Signed"]
-      , options = []
-      , setOption = \ _ _ -> Right enumTest
-      }
-    boundedTest = TestInstance
-      { run = return $ Finished testBounded
-      , name = "testBounded"
-      , tags = ["Signed"]
-      , options = []
-      , setOption = \ _ _ -> Right boundedTest
-      }
-    eqTest = TestInstance
-      { run = return $ Finished testEq
-      , name = "testEq"
-      , tags = []
-      , options = []
-      , setOption = \ _ _ -> Right eqTest
-      }
-    ordTest = TestInstance
-      { run = return $ Finished testOrd
-      , name = "testOrd"
-      , tags = []
-      , options = []
-      , setOption = \ _ _ -> Right ordTest
-      }
-    numTest = TestInstance
-      { run = return $ Finished testNum
-      , name = "testNum"
-      , tags = []
-      , options = []
-      , setOption = \ _ _ -> Right numTest
-      }
-    realTest = TestInstance
-      { run = return $ Finished testReal
-      , name = "testReal"
-      , tags = []
-      , options = []
-      , setOption = \ _ _ -> Right realTest
-      }
-    integralTest = TestInstance
-      { run = return $ Finished testIntegral
-      , name = "testIntegral"
-      , tags = []
-      , options = []
-      , setOption = \ _ _ -> Right integralTest
-      }
-    enumUTest = TestInstance
-      { run = return $ Finished testUFromEnum
-      , name = "testUFromEnum"
-      , tags = []
-      , options = []
-      , setOption = \ _ _ -> Right enumUTest
-      }
+tests = return ( map signedTestInstance [ (testFromEnum, "testFromEnum")
+                                        , (testBounded, "testBounded")
+                                        , (testEq, "testEq")
+                                        , (testOrd, "testOrd")
+                                        , (testNum, "testNum")
+                                        , (testReal, "testReal")
+                                        , (testIntegral, "testIntegral")
+                                        ]
+                 ++
+                 map unsignedTestInstance [ (testUFromEnum, "testUFromEnum")
+                                          ])
+
