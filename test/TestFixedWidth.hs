@@ -39,10 +39,18 @@ testUFromEnum = findFail $ map f vec
                  | otherwise = Fail ("Result=" ++ (show $ fromEnum t) ++ ", ref=" ++ (show r))
 
 testBounded :: Result
-testBounded | min == -64 = Pass
-            | otherwise = Fail ("min=" ++ (show min))
+testBounded | min /= -64 = Fail ("min=" ++ (show min))
+            | max /= 63 = Fail ("max=" ++ (show max))
+            | otherwise = Pass
   where min = fromEnum (minBound::Bit7)
         max = fromEnum (maxBound::Bit7)
+
+testUBounded :: Result
+testUBounded | min /= 0 = Fail ("min=" ++ (show min))
+             | max /= 127 = Fail ("max=" ++ (show max))
+             | otherwise = Pass
+  where min = fromEnum (minBound::U7)
+        max = fromEnum (maxBound::U7)
 
 testEq :: Result
 testEq = findFail $ (map f vec) ++ (map f' vec')
@@ -132,5 +140,6 @@ tests = return ( map signedTestInstance [ (testFromEnum, "testFromEnum")
                                         ]
                  ++
                  map unsignedTestInstance [ (testUFromEnum, "testUFromEnum")
+                                          , (testUBounded, "testUBounded")
                                           ])
 

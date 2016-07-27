@@ -56,6 +56,10 @@ boundedInstance typeName conName bitWidth = instanceHead "Bounded" typeName [min
   where minBoundD = funP0D "minBound" [| $(conE conName) (-(bit (bitWidth - 1))) |]
         maxBoundD = funP0D "maxBound" [| $(conE conName) ((bit (bitWidth - 1)) - 1)|]
 
+boundedUnsignedD :: Name -> Name -> Int -> DecQ
+boundedUnsignedD typeName conName bitWidth = instanceHead "Bounded" typeName [minBoundD, maxBoundD]
+  where minBoundD = funP0D "minBound" [| $(conE conName) 0 |]
+        maxBoundD = funP0D "maxBound" [| $(conE conName) $ (bit bitWidth - 1) |]
 enumFun2 :: Enum a => (Int -> Int -> b) -> (a -> a -> b)
 enumFun2 f = \a b -> f (fromEnum a) (fromEnum b)
 
@@ -119,4 +123,5 @@ declareUnsignedFW typeStr conStr bitWidth =
          conName = mkName conStr
      typeD <- declareUnsignedFWType typeName conName
      enumD <- enumUnsignedInstance typeName conName bitWidth
-     return [typeD, enumD]
+     boundedD <- boundedUnsignedD typeName conName bitWidth
+     return [typeD, enumD, boundedD]
