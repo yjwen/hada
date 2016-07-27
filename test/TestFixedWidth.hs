@@ -61,6 +61,15 @@ testEq = findFail $ (map f vec) ++ (map f' vec')
         f' (r, t) | Bit7 r /= t = Pass
                   | otherwise = Fail ("When testing (/=): r=" ++ (show r) ++ ", t=" ++ (show t))
 
+testUEq :: Result
+testUEq = findFail $ (map f vec) ++ (map f' vec')
+  where vec = [(0, U7 0), (0, U7 128), (127, U7 127), (127, U7 $ bit 7 + 127)]
+        f (r, t) | U7 r == t = Pass
+                 | otherwise = Fail $ "When testing (==): r=" ++ (show r) ++ ", t=" ++ (show t)
+        vec' = [(1, U7 0)]
+        f' (r, t) | U7 r /= t = Pass
+                  | otherwise = Fail $ "When testing (/=): r=" ++ (show r) ++ ", t=" ++ (show t)
+
 testOrd :: Result
 testOrd = findFail $ map f vec
   where vec = [(Bit7 (-1), Bit7 0), (Bit7 0, Bit7 1), (Bit7 64, Bit7 (-63))]
@@ -141,5 +150,6 @@ tests = return ( map signedTestInstance [ (testFromEnum, "testFromEnum")
                  ++
                  map unsignedTestInstance [ (testUFromEnum, "testUFromEnum")
                                           , (testUBounded, "testUBounded")
+                                          , (testUEq, "testUEq")
                                           ])
 
