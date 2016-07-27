@@ -76,6 +76,15 @@ testOrd = findFail $ map f vec
         f (l, r) | compare l r == LT = Pass
                  | otherwise = Fail ((show l) ++ " is not less than " ++ (show r))
 
+testUOrd :: Result
+testUOrd | compare l r /= LT = fail l r "less than"
+         | compare r l /= GT = fail l r "greater than"
+         | compare l l /= EQ = fail l l "equal to"
+         | otherwise = Pass
+  where l = U7 0
+        r = U7 127
+        fail l r str = Fail $ (show l) ++ " is not " ++ str ++ " " ++ (show r)
+
 testNum :: Result
 testNum = findFail $ (map (f (+) "+") vecPlus) ++ (map (f (-) "-") vecMinus) ++ (map (f (*) "*") vecMul) ++
           (map (f' abs "abs") vecAbs) ++ (map (f' negate "negate") vecNegate)
@@ -151,5 +160,6 @@ tests = return ( map signedTestInstance [ (testFromEnum, "testFromEnum")
                  map unsignedTestInstance [ (testUFromEnum, "testUFromEnum")
                                           , (testUBounded, "testUBounded")
                                           , (testUEq, "testUEq")
+                                          , (testUOrd, "testUOrd")
                                           ])
 
