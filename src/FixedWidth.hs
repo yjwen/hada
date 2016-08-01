@@ -126,4 +126,5 @@ declareUnsignedFW typeStr conStr bitWidth =
      boundedD <- boundedUnsignedD typeName conName bitWidth
      eqD <- eqInstance typeName
      ordD <- ordInstance typeName
-     return [typeD, enumD, boundedD, eqD, ordD]
+     numD <- numInstance typeName
+     return [typeD, enumD, boundedD, eqD, ordD, numD]

@@ -106,6 +106,26 @@ testNum = findFail $ (map (f (+) "+") vecPlus) ++ (map (f (-) "-") vecMinus) ++ 
                     ]
         f' op opstr (r, t) | r == op t = Pass
                            | otherwise = Fail $ "Found " ++ opstr ++ (show t) ++ " /= " ++ (show r)
+
+testUNum :: Result
+testUNum | max + one /= min = fail (Just max) "+" one min
+         -- | min - one /= max = fail (Just min) "-" one max
+         | max * one /= max = fail (Just max) "*" one max
+         | min * one /= min = fail (Just min) "*" one min
+         -- - one /= max = fail Nothing "-" one max
+         | abs min /= min = fail Nothing "abs" min min
+         | abs max /= max = fail Nothing "abs" max max
+         | otherwise = Pass
+  where max = maxBound::U7
+        min = minBound::U7
+        one = U7 1
+        fail :: Maybe U7 -> String -> U7 -> U7 -> Result
+        fail l op r ref = Fail "Failed."
+--         -- fail l op r ref = Fail $ l' ++ op ++ " " ++ (show r) ++ " /= " ++ (show ref)
+--         --   where l'= case l of
+--         --               Just x -> (show x) ++ " "
+--         --               otherwise -> ""
+
 testReal :: Result
 testReal | ref == test = Pass
          | otherwise = Fail $ "ref=" ++ (show ref) ++ ", test=" ++ (show test)
@@ -161,5 +181,6 @@ tests = return ( map signedTestInstance [ (testFromEnum, "testFromEnum")
                                           , (testUBounded, "testUBounded")
                                           , (testUEq, "testUEq")
                                           , (testUOrd, "testUOrd")
+                                          , (testUNum, "testUNum")
                                           ])
 
