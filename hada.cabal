@@ -19,7 +19,7 @@ library
   exposed-modules:     FixedWidth
   -- other-modules:       
   other-extensions:    TemplateHaskell
-  build-depends:       base >=4.8 && <4.9, template-haskell >=2.10 && <2.11
+  build-depends:       base >=4.9, template-haskell >=2.11
   hs-source-dirs:      src
   default-language:    Haskell2010
 

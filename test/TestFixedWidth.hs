@@ -9,7 +9,7 @@ import Data.List
 import Data.Ratio
 
 $(declareFW "Bit7" "Bit7" 7)
-
+$(declareFW' "Bit7'" "Bit7'" 7)
 $(declareUnsignedFW "U7" "U7" 7)
 
 findFail :: [Result] -> Result
@@ -26,6 +26,20 @@ testVector ((r, t):vs) f | result == Pass = testVector vs f
                          | otherwise = result
   where result = f r t
 
+testShow :: Result
+testShow | result == "Bit7' 1" = Pass
+         | otherwise = Fail ("Result=" ++ result ++ ", ref=Bit7' 1")
+         where result = show $ Bit7' 1
+
+allEqual :: (Eq a, Show a) => [(a, a)] -> Result
+allEqual [] = Pass
+allEqual ((r, t):xs) | r /= t = Fail $ "Ref=" ++ (show r) ++ ", test=" ++ (show t)
+                     | otherwise = allEqual xs
+
+testWiden :: Result
+testWiden = allEqual ([ (0, widen $ Bit7' 0)
+                      , (0, widen $ Bit7' 128)
+                      ]::[(Int, Int)])
 testFromEnum :: Result
 testFromEnum = findFail $ map f vec
   where vec = [(7, Bit7 (bit 7 + 7)), (-1, Bit7 $ -1), (-64, Bit7 $ -64), (63, Bit7 63)]
@@ -168,7 +182,9 @@ unsignedTestInstance (test, name) = Test theInstance
                                    , setOption = \ _ _ -> Right theInstance
                                    }
 tests :: IO [Test]
-tests = return ( map signedTestInstance [ (testFromEnum, "testFromEnum")
+tests = return ( map signedTestInstance [ (testShow, "testShow")
+                                        , (testWiden, "testWiden")
+                                        , (testFromEnum, "testFromEnum")
                                         , (testBounded, "testBounded")
                                         , (testEq, "testEq")
                                         , (testOrd, "testOrd")

@@ -4,14 +4,53 @@ module FixedWidth where
 import Language.Haskell.TH
 import Data.Bits
 
+class FixedWidth f where
+  widen :: (Num a, Bits a) => f a -> a
+  narrow :: a -> f a
+
+dataFWD :: Name -> Name -> DecQ
+dataFWD typeName conName = do
+  na <- newName "a" -- The type variable.
+  dataD -- data declaration
+    (cxt []) -- No context
+    typeName
+    [PlainTV na] -- Bit7Base a
+    Nothing -- No Kind
+    [normalC conName [bangType (bang noSourceUnpackedness noSourceStrictness) $ varT na]]
+    (cxt []) -- No Deriving
+
+tySynFWD :: Name -> Name -> Name -> DecQ
+tySynFWD typeName hiddenTypeName baseTypeName =
+  tySynD typeName [] $ appT (conT hiddenTypeName) (conT baseTypeName)
+
+declareFW' :: String -> String -> Int -> DecsQ
+declareFW' typeStr conStr bitWidth = do
+  let typeName = mkName typeStr
+      conName = mkName conStr
+  a <- newName "a"
+  hiddenTypeName <- newName $ typeStr ++ "__"
+  let showFunD = funP1D "show" conName a [| $(litE $ StringL typeStr) ++ " " ++ (show $(varE a))|]
+      widenFunD = funP1D "widen" conName a [| extendSigned $(varE a) $(litE $ IntegerL $ toInteger bitWidth) |]
+      narrowFunD = funP0D "narrow" $ conE conName
+  sequence [ dataFWD hiddenTypeName conName
+           , tySynFWD typeName hiddenTypeName $ mkName "Int"
+           , instanceHead' (mkName "Show") hiddenTypeName a [showFunD]
+           , instanceD (cxt []) (appT (conT $ mkName "FixedWidth") (conT hiddenTypeName)) [widenFunD, narrowFunD]
+           ]
+
+instanceHead' :: Name -> Name -> Name -> [DecQ] -> DecQ
+instanceHead' className typeName varName
+  = instanceD (cxt [appT (conT className) $ varT varName]) (appT (conT className) $ appT (conT typeName) $ varT varName)
+  
 newtypeFWD :: Name -> Name -> Name -> DecQ
 newtypeFWD typeName conName baseTypeName =
   newtypeD -- newtype delcaration
   (cxt []) -- No type context
   typeName -- Make the type name
   [] -- No type variable binds
-  (normalC conName [strictType notStrict $ conT baseTypeName]) -- Only one constructor, accepts an Int type
-  [mkName "Show"] -- deriving
+  Nothing
+  (normalC conName [bangType (bang noSourceUnpackedness noSourceStrictness) $ conT baseTypeName]) -- Only one constructor, accepts an Int type
+  (cxt [conT $ mkName "Show"]) -- deriving
 
 declareFWType :: Name -> Name -> DecQ
 declareFWType typeName conName = newtypeFWD typeName conName $ mkName "Int"
@@ -22,7 +61,7 @@ declareUnsignedFWType typeName conName = newtypeFWD typeName conName $ mkName "W
 instanceHead :: String -> Name -> ([DecQ] -> DecQ)
 instanceHead classStr typeName = instanceD (cxt []) (appT (conT $ mkName classStr) (conT typeName))
 
-extendSigned :: Int -> Int -> Int
+extendSigned :: (Num a, Bits a) => a -> Int -> a
 extendSigned v width = case (testBit v (width - 1)) of
                          True -> v .|. mask1
                          False -> v .&. mask0
