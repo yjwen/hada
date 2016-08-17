@@ -9,7 +9,7 @@ import Data.List
 import Data.Ratio
 
 $(declareFW "Bit7" "Bit7" 7)
-$(declareFW' "Bit7'" "Bit7'" 7)
+$(declareFW' "Bit7'" "bit7" 7)
 $(declareUnsignedFW "U7" "U7" 7)
 
 findFail :: [Result] -> Result
@@ -29,22 +29,20 @@ testVector ((r, t):vs) f | result == Pass = testVector vs f
 testShow :: Result
 testShow | result == "Bit7' 1" = Pass
          | otherwise = Fail ("Result=" ++ result ++ ", ref=Bit7' 1")
-         where result = show $ Bit7' 1
+         where result = show $ bit7 1
 
 allEqual :: (Eq a, Show a) => [(a, a)] -> Result
 allEqual [] = Pass
 allEqual ((r, t):xs) | r /= t = Fail $ "Ref=" ++ (show r) ++ ", test=" ++ (show t)
                      | otherwise = allEqual xs
 
-testWiden :: Result
-testWiden = allEqual ([ (0, widen $ Bit7' 0)
-                      , (0, widen $ Bit7' 128)
-                      ]::[(Int, Int)])
+testFromFW :: Result
+testFromFW = allEqual $ map t [(0, 0), (0, 128)]
+  where t (a, b) = (a, fromFW $ bit7 b)
+
 testFromEnum :: Result
-testFromEnum = findFail $ map f vec
-  where vec = [(7, Bit7 (bit 7 + 7)), (-1, Bit7 $ -1), (-64, Bit7 $ -64), (63, Bit7 63)]
-        f (r, t) | r == fromEnum t =  Pass
-                 | otherwise =  Fail ("Result=" ++ (show $ fromEnum t) ++ ", ref=" ++ (show r))
+testFromEnum = allEqual $ map t [ (7, bit 7 + 7), (-1, -1), (-64, -64), (63, 63)]
+  where t (a, b) = (a, fromEnum $ bit7 b)
 
 testUFromEnum :: Result
 testUFromEnum = findFail $ map f vec
@@ -53,11 +51,8 @@ testUFromEnum = findFail $ map f vec
                  | otherwise = Fail ("Result=" ++ (show $ fromEnum t) ++ ", ref=" ++ (show r))
 
 testBounded :: Result
-testBounded | min /= -64 = Fail ("min=" ++ (show min))
-            | max /= 63 = Fail ("max=" ++ (show max))
-            | otherwise = Pass
-  where min = fromEnum (minBound::Bit7)
-        max = fromEnum (maxBound::Bit7)
+testBounded = allEqual [ (-64, fromEnum (minBound::Bit7'))
+                       , (63, fromEnum (maxBound::Bit7'))]
 
 testUBounded :: Result
 testUBounded | min /= 0 = Fail ("min=" ++ (show min))
@@ -183,7 +178,7 @@ unsignedTestInstance (test, name) = Test theInstance
                                    }
 tests :: IO [Test]
 tests = return ( map signedTestInstance [ (testShow, "testShow")
-                                        , (testWiden, "testWiden")
+                                        , (testFromFW, "testFromFW")
                                         , (testFromEnum, "testFromEnum")
                                         , (testBounded, "testBounded")
                                         , (testEq, "testEq")

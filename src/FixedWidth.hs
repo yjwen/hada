@@ -5,8 +5,8 @@ import Language.Haskell.TH
 import Data.Bits
 
 class FixedWidth f where
-  widen :: (Num a, Bits a) => f a -> a
-  narrow :: a -> f a
+  fromFW :: Bits a => f a -> a
+  toFW :: a -> f a
 
 dataFWD :: Name -> Name -> DecQ
 dataFWD typeName conName = do
@@ -24,24 +24,40 @@ tySynFWD typeName hiddenTypeName baseTypeName =
   tySynD typeName [] $ appT (conT hiddenTypeName) (conT baseTypeName)
 
 declareFW' :: String -> String -> Int -> DecsQ
-declareFW' typeStr conStr bitWidth = do
+declareFW' typeStr helperFunStr bitWidth = do
   let typeName = mkName typeStr
-      conName = mkName conStr
+      helperFunName = mkName helperFunStr
+      baseName = mkName "Int"
+  conName <- newName typeStr
   a <- newName "a"
   hiddenTypeName <- newName $ typeStr ++ "__"
-  let showFunD = funP1D "show" conName a [| $(litE $ StringL typeStr) ++ " " ++ (show $(varE a))|]
-      widenFunD = funP1D "widen" conName a [| extendSigned $(varE a) $(litE $ IntegerL $ toInteger bitWidth) |]
-      narrowFunD = funP0D "narrow" $ conE conName
+  let helperFunSigD = sigD helperFunName (appT (appT arrowT (conT baseName)) $ conT typeName)
+      helperFunD = funP0D helperFunStr (conE conName)
+      showFunD = funP1D "show" conName a [| $(litE $ StringL typeStr) ++ " " ++ (show $(varE a))|]
+      eBitWidth = litE $ IntegerL $ toInteger bitWidth
+      fromFWFunD = funP1D "fromFW" conName a [| extendSigned $(varE a) $(eBitWidth) |]
+      toFWFunD = funP0D "toFW" $ conE conName
+      fromEnumD = funP0D "fromEnum" [| fromEnum . fromFW |]
+      toEnumD = funP0D "toEnum" [| toFW . toEnum |]
+      showType = conT $ mkName "Show"
+      ta = varT a
+      tHidden = conT hiddenTypeName
+      tFixedWidth = conT $ mkName "FixedWidth"
+      tEnum = conT $ mkName "Enum"
+      tBits = conT $ mkName "Bits"
+      tBounded = conT $ mkName "Bounded"
+      minBoundD = funP0D "minBound" [| toFW $ bit ($(eBitWidth) - 1) |]
+      maxBoundD = funP0D "maxBound" [| toFW $ complement $ shiftL (complement zeroBits) ($(eBitWidth) - 1) |]
   sequence [ dataFWD hiddenTypeName conName
-           , tySynFWD typeName hiddenTypeName $ mkName "Int"
-           , instanceHead' (mkName "Show") hiddenTypeName a [showFunD]
-           , instanceD (cxt []) (appT (conT $ mkName "FixedWidth") (conT hiddenTypeName)) [widenFunD, narrowFunD]
+           , tySynFWD typeName hiddenTypeName baseName
+           , helperFunSigD
+           , helperFunD
+           , instanceD (cxt [appT showType ta]) (appT showType $ appT tHidden ta) [showFunD]
+           , instanceD (cxt []) (appT tFixedWidth tHidden) [fromFWFunD, toFWFunD]
+           , instanceD (cxt [appT tEnum ta, appT tBits ta]) (appT tEnum $ appT tHidden ta) [fromEnumD, toEnumD]
+           , instanceD (cxt [appT tBounded ta, appT tBits ta]) (appT tBounded $ appT tHidden ta) [minBoundD, maxBoundD]
            ]
 
-instanceHead' :: Name -> Name -> Name -> [DecQ] -> DecQ
-instanceHead' className typeName varName
-  = instanceD (cxt [appT (conT className) $ varT varName]) (appT (conT className) $ appT (conT typeName) $ varT varName)
-  
 newtypeFWD :: Name -> Name -> Name -> DecQ
 newtypeFWD typeName conName baseTypeName =
   newtypeD -- newtype delcaration
@@ -61,12 +77,12 @@ declareUnsignedFWType typeName conName = newtypeFWD typeName conName $ mkName "W
 instanceHead :: String -> Name -> ([DecQ] -> DecQ)
 instanceHead classStr typeName = instanceD (cxt []) (appT (conT $ mkName classStr) (conT typeName))
 
-extendSigned :: (Num a, Bits a) => a -> Int -> a
+extendSigned :: (Bits a) => a -> Int -> a
 extendSigned v width = case (testBit v (width - 1)) of
                          True -> v .|. mask1
                          False -> v .&. mask0
-  where mask0 = (bit width) - 1
-        mask1 = complement mask0
+  where mask0 = complement mask1
+        mask1 = shiftL (complement zeroBits) width
 
 extendUnsigned :: Word -> Int -> Word
 extendUnsigned v width = v .&. (bit width - 1)
