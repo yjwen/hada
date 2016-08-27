@@ -8,8 +8,7 @@ import Data.Bits
 import Data.List
 import Data.Ratio
 
-$(declareFW "Bit7" "Bit7" 7)
-$(declareFW' "Bit7'" "bit7" 7)
+$(declareFW "Bit7" "bit7" 7)
 $(declareUnsignedFW "U7" "U7" 7)
 
 findFail :: [Result] -> Result
@@ -27,8 +26,8 @@ testVector ((r, t):vs) f | result == Pass = testVector vs f
   where result = f r t
 
 testShow :: Result
-testShow | result == "Bit7' 1" = Pass
-         | otherwise = Fail ("Result=" ++ result ++ ", ref=Bit7' 1")
+testShow | result == "Bit7 1" = Pass
+         | otherwise = Fail ("Result=" ++ result ++ ", ref=Bit7 1")
          where result = show $ bit7 1
 
 allEqual :: (Eq a, Show a) => [(a, a)] -> Result
@@ -51,8 +50,8 @@ testUFromEnum = findFail $ map f vec
                  | otherwise = Fail ("Result=" ++ (show $ fromEnum t) ++ ", ref=" ++ (show r))
 
 testBounded :: Result
-testBounded = allEqual [ (-64, fromEnum (minBound::Bit7'))
-                       , (63, fromEnum (maxBound::Bit7'))]
+testBounded = allEqual [ (-64, fromEnum (minBound::Bit7))
+                       , (63, fromEnum (maxBound::Bit7))]
 
 testUBounded :: Result
 testUBounded | min /= 0 = Fail ("min=" ++ (show min))
@@ -105,8 +104,8 @@ testNum = allEqual [ (min, max + (bit7 1))
                    , (bit7 1, negate $ bit7 $ -1)
                    , (bit7 $ -1, negate $ bit7 1)
                    ]
-  where min = minBound::Bit7'
-        max = maxBound::Bit7'
+  where min = minBound::Bit7
+        max = maxBound::Bit7
 
 testUNum :: Result
 testUNum | max + one /= min = fail (Just max) "+" one min

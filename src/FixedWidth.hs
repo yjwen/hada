@@ -23,8 +23,8 @@ tySynFWD :: Name -> Name -> Name -> DecQ
 tySynFWD typeName hiddenTypeName baseTypeName =
   tySynD typeName [] $ appT (conT hiddenTypeName) (conT baseTypeName)
 
-declareFW' :: String -> String -> Int -> DecsQ
-declareFW' typeStr helperFunStr bitWidth = do
+declareFW :: String -> String -> Int -> DecsQ
+declareFW typeStr helperFunStr bitWidth = do
   let typeName = mkName typeStr
       helperFunName = mkName helperFunStr
       baseName = mkName "Int"
@@ -33,12 +33,7 @@ declareFW' typeStr helperFunStr bitWidth = do
   hiddenTypeName <- newName $ typeStr ++ "__"
   let helperFunSigD = sigD helperFunName (appT (appT arrowT (conT baseName)) $ conT typeName)
       helperFunD = funP0D helperFunStr (conE conName)
-      showFunD = funP1D "show" conName a [| $(litE $ StringL typeStr) ++ " " ++ (show $(varE a))|]
       eBitWidth = litE $ IntegerL $ toInteger bitWidth
-      fromFWFunD = funP1D "fromFW" conName a [| extendSigned $(varE a) $(eBitWidth) |]
-      toFWFunD = funP0D "toFW" $ conE conName
-      fromEnumD = funP0D "fromEnum" [| fromEnum . fromFW |]
-      toEnumD = funP0D "toEnum" [| toFW . toEnum |]
       showType = conT $ mkName "Show"
       ta = varT a
       tHidden = conT hiddenTypeName
@@ -46,36 +41,46 @@ declareFW' typeStr helperFunStr bitWidth = do
       tEnum = conT $ mkName "Enum"
       tBits = conT $ mkName "Bits"
       tBounded = conT $ mkName "Bounded"
-      minBoundD = funP0D "minBound" [| toFW $ bit ($(eBitWidth) - 1) |]
-      maxBoundD = funP0D "maxBound" [| toFW $ complement $ shiftL (complement zeroBits) ($(eBitWidth) - 1) |]
       tEq = conT $ mkName "Eq"
-      eqD = funP0D "==" [| \ a b -> (fromFW a) == (fromFW b) |]
-      neqD = funP0D "/=" [| \ a b -> (fromFW a) /= (fromFW b) |]
       tOrd = conT $ mkName "Ord"
-      compareD = funP0D "compare" [| \ a b -> compare (fromFW a) (fromFW b) |]
       tNum = conT $ mkName "Num"
-      plusD = funP0D "+" [| \ a b -> toFW $ (fromFW a) + (fromFW b) |]
-      minusD = funP0D "-" [| \ a b -> toFW $ (fromFW a) - (fromFW b) |]
-      multD =  funP0D "*" [| \ a b -> toFW $ (fromFW a) * (fromFW b) |]
-      absD = funP0D "abs" [| toFW . abs . fromFW |]
-      signumD = funP0D "signum" [| toFW . signum . fromFW |]
-      negateD = funP0D "negate" [| toFW . negate . fromFW |]
-      fromIntegerD = funP0D "fromInteger" [| toFW . fromInteger |]
       tReal = conT $ mkName "Real"
-      toRationalD = funP0D "toRational" [| toRational . fromFW |]
       tIntegral = conT $ mkName "Integral"
   sequence [ dataFWD hiddenTypeName conName
            , tySynFWD typeName hiddenTypeName baseName
            , helperFunSigD
            , helperFunD
-           , instanceD (cxt [appT showType ta]) (appT showType $ appT tHidden ta) [showFunD]
-           , instanceD (cxt []) (appT tFixedWidth tHidden) [fromFWFunD, toFWFunD]
-           , instanceD (cxt [appT tEnum ta, appT tBits ta]) (appT tEnum $ appT tHidden ta) [fromEnumD, toEnumD]
-           , instanceD (cxt [appT tBounded ta, appT tBits ta]) (appT tBounded $ appT tHidden ta) [minBoundD, maxBoundD]
-           , instanceD (cxt [appT tEq ta, appT tBits ta]) (appT tEq $ appT tHidden ta) [eqD, neqD]
-           , instanceD (cxt [appT tOrd ta, appT tBits ta]) (appT tOrd $ appT tHidden ta) [compareD]
-           , instanceD (cxt [appT tNum ta, appT tBits ta]) (appT tNum $ appT tHidden ta) [plusD, minusD, multD, absD, signumD, negateD, fromIntegerD]
-           , instanceD (cxt [appT tReal ta, appT tBits ta]) (appT tReal $ appT tHidden ta) [toRationalD]
+           , instanceD (cxt [appT showType ta]) (appT showType $ appT tHidden ta)
+             [funP1D "show" conName a [| $(litE $ StringL typeStr) ++ " " ++ (show $(varE a))|]]
+           , instanceD (cxt []) (appT tFixedWidth tHidden)
+             [ funP1D "fromFW" conName a [| extendSigned $(varE a) $(eBitWidth) |]
+             , funP0D "toFW" $ conE conName
+             ]
+           , instanceD (cxt [appT tEnum ta, appT tBits ta]) (appT tEnum $ appT tHidden ta)
+             [ funP0D "fromEnum" [| fromEnum . fromFW |]
+             , funP0D "toEnum" [| toFW . toEnum |]
+             ]
+           , instanceD (cxt [appT tBounded ta, appT tBits ta]) (appT tBounded $ appT tHidden ta)
+             [ funP0D "minBound" [| toFW $ bit ($(eBitWidth) - 1) |]
+             , funP0D "maxBound" [| toFW $ complement $ shiftL (complement zeroBits) ($(eBitWidth) - 1) |]
+             ]
+           , instanceD (cxt [appT tEq ta, appT tBits ta]) (appT tEq $ appT tHidden ta)
+             [ funP0D "==" [| \ a b -> (fromFW a) == (fromFW b) |]
+             , funP0D "/=" [| \ a b -> (fromFW a) /= (fromFW b) |]
+             ]
+           , instanceD (cxt [appT tOrd ta, appT tBits ta]) (appT tOrd $ appT tHidden ta)
+             [funP0D "compare" [| \ a b -> compare (fromFW a) (fromFW b) |]]
+           , instanceD (cxt [appT tNum ta, appT tBits ta]) (appT tNum $ appT tHidden ta)
+             [ funP0D "+" [| \ a b -> toFW $ (fromFW a) + (fromFW b) |]
+             , funP0D "-" [| \ a b -> toFW $ (fromFW a) - (fromFW b) |]
+             , funP0D "*" [| \ a b -> toFW $ (fromFW a) * (fromFW b) |]
+             , funP0D "abs" [| toFW . abs . fromFW |]
+             , funP0D "signum" [| toFW . signum . fromFW |]
+             , funP0D "negate" [| toFW . negate . fromFW |]
+             , funP0D "fromInteger" [| toFW . fromInteger |]
+             ]
+           , instanceD (cxt [appT tReal ta, appT tBits ta]) (appT tReal $ appT tHidden ta)
+             [funP0D "toRational" [| toRational . fromFW |]]
            , instanceD (cxt [appT tIntegral ta, appT tBits ta]) (appT tIntegral $ appT tHidden ta)
              [ funP0D "quot" [| \ a b -> toFW $ quot (fromFW a) (fromFW b) |]
              , funP0D "rem"  [| \ a b -> toFW $ rem (fromFW a) (fromFW b) |]
@@ -186,20 +191,6 @@ integralInstance typeName = instanceHead "Integral" typeName [quotD, remD, divD,
         quotRemD = funP0D "quotRem" [| closedEnumFun2Tuple2 quotRem |]
         divModD = funP0D "divMod" [| closedEnumFun2Tuple2 divMod |]
         toIntegerD = funP0D "toInteger" [| toInteger . fromEnum |]
-
-declareFW :: String -> String -> Int -> DecsQ
-declareFW typeStr conStr bitWidth =
-  do let typeName = mkName typeStr
-         conName = mkName conStr
-     typeD <- declareFWType typeName conName
-     enumD <- enumInstance typeName conName bitWidth
-     boundedD <- boundedInstance typeName conName bitWidth
-     eqD <- eqInstance typeName
-     ordD <- ordInstance typeName
-     numD <- numInstance typeName
-     realD <- realInstance typeName
-     integralD <- integralInstance typeName
-     return [typeD, enumD, boundedD, eqD, ordD, numD, realD, integralD]
 
 declareUnsignedFW :: String -> String -> Int -> DecsQ
 declareUnsignedFW typeStr conStr bitWidth =
