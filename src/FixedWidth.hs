@@ -23,6 +23,17 @@ tySynFWD :: Name -> Name -> Name -> DecQ
 tySynFWD typeName hiddenTypeName baseTypeName =
   tySynD typeName [] $ appT (conT hiddenTypeName) (conT baseTypeName)
 
+tShow = conT $ mkName "Show"
+tFixedWidth = conT $ mkName "FixedWidth"
+tEnum = conT $ mkName "Enum"
+tBits = conT $ mkName "Bits"
+tBounded = conT $ mkName "Bounded"
+tEq = conT $ mkName "Eq"
+tOrd = conT $ mkName "Ord"
+tNum = conT $ mkName "Num"
+tReal = conT $ mkName "Real"
+tIntegral = conT $ mkName "Integral"
+
 declareFW :: String -> String -> Int -> DecsQ
 declareFW typeStr helperFunStr bitWidth = do
   let typeName = mkName typeStr
@@ -31,26 +42,14 @@ declareFW typeStr helperFunStr bitWidth = do
   conName <- newName typeStr
   a <- newName "a"
   hiddenTypeName <- newName $ typeStr ++ "__"
-  let helperFunSigD = sigD helperFunName (appT (appT arrowT (conT baseName)) $ conT typeName)
-      helperFunD = funP0D helperFunStr (conE conName)
-      eBitWidth = litE $ IntegerL $ toInteger bitWidth
-      showType = conT $ mkName "Show"
-      ta = varT a
+  let eBitWidth = litE $ IntegerL $ toInteger bitWidth
       tHidden = conT hiddenTypeName
-      tFixedWidth = conT $ mkName "FixedWidth"
-      tEnum = conT $ mkName "Enum"
-      tBits = conT $ mkName "Bits"
-      tBounded = conT $ mkName "Bounded"
-      tEq = conT $ mkName "Eq"
-      tOrd = conT $ mkName "Ord"
-      tNum = conT $ mkName "Num"
-      tReal = conT $ mkName "Real"
-      tIntegral = conT $ mkName "Integral"
+      ta = varT a
   sequence [ dataFWD hiddenTypeName conName
            , tySynFWD typeName hiddenTypeName baseName
-           , helperFunSigD
-           , helperFunD
-           , instanceD (cxt [appT showType ta]) (appT showType $ appT tHidden ta)
+           , sigD helperFunName (appT (appT arrowT (conT baseName)) $ conT typeName)
+           , funP0D helperFunStr (conE conName)
+           , instanceD (cxt [appT tShow ta]) (appT tShow $ appT tHidden ta)
              [funP1D "show" conName a [| $(litE $ StringL typeStr) ++ " " ++ (show $(varE a))|]]
            , instanceD (cxt []) (appT tFixedWidth tHidden)
              [ funP1D "fromFW" conName a [| extendSigned $(varE a) $(eBitWidth) |]
@@ -92,6 +91,24 @@ declareFW typeStr helperFunStr bitWidth = do
              ]
            ]
 
+declareUFW :: String -> String -> Int -> DecsQ
+declareUFW typeStr helperFunStr bitWidth = do
+  let typeName = mkName typeStr
+      helperFunName = mkName helperFunStr
+      baseName = mkName "Word"
+  conName <- newName typeStr
+  a <- newName "a"
+  hiddenTypeName <- newName $ typeStr ++ "__"
+  let tHidden = conT hiddenTypeName
+      ta = varT a
+  sequence [ dataFWD hiddenTypeName conName
+           , tySynFWD typeName hiddenTypeName baseName
+           , sigD helperFunName (appT (appT arrowT (conT baseName)) $ conT typeName)
+           , funP0D helperFunStr (conE conName)
+           , instanceD (cxt [appT tShow ta]) (appT tShow $ appT tHidden ta)
+             [funP1D "show" conName a [| $(litE $ StringL typeStr) ++ " " ++ (show $(varE a))|]]
+           ]
+  
 newtypeFWD :: Name -> Name -> Name -> DecQ
 newtypeFWD typeName conName baseTypeName =
   newtypeD -- newtype delcaration

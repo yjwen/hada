@@ -9,6 +9,7 @@ import Data.List
 import Data.Ratio
 
 $(declareFW "Bit7" "bit7" 7)
+$(declareUFW "UBit7" "ubit7" 7)
 $(declareUnsignedFW "U7" "U7" 7)
 
 findFail :: [Result] -> Result
@@ -26,10 +27,16 @@ testVector ((r, t):vs) f | result == Pass = testVector vs f
   where result = f r t
 
 testShow :: Result
-testShow | result == "Bit7 1" = Pass
-         | otherwise = Fail ("Result=" ++ result ++ ", ref=Bit7 1")
+testShow | result == ref = Pass
+         | otherwise = Fail ("Result=" ++ result ++ ", ref=" ++ ref)
          where result = show $ bit7 1
+               ref = "Bit7 1"
 
+testUShow :: Result
+testUShow | result == ref = Pass
+          | otherwise = Fail ("Result=" ++ result ++ ", ref=" ++ ref)
+          where result = show $ ubit7 1
+                ref = "UBit7 1"
 allEqual :: (Eq a, Show a) => [(a, a)] -> Result
 allEqual [] = Pass
 allEqual ((r, t):xs) | r /= t = Fail $ "Ref=" ++ (show r) ++ ", test=" ++ (show t)
@@ -164,7 +171,8 @@ tests = return ( map signedTestInstance [ (testShow, "testShow")
                                         , (testIntegral, "testIntegral")
                                         ]
                  ++
-                 map unsignedTestInstance [ (testUFromEnum, "testUFromEnum")
+                 map unsignedTestInstance [ (testUShow, "testUShow")
+                                          , (testUFromEnum, "testUFromEnum")
                                           , (testUBounded, "testUBounded")
                                           , (testUEq, "testUEq")
                                           , (testUOrd, "testUOrd")
