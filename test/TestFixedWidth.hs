@@ -43,42 +43,37 @@ allEqual ((r, t):xs) | r /= t = Fail $ "Ref=" ++ (show r) ++ ", test=" ++ (show 
                      | otherwise = allEqual xs
 
 testFromFW :: Result
-testFromFW = allEqual $ map t [(0, 0), (0, 128)]
+testFromFW = allEqual $ map t [(0, 0), (1, 129)]
   where t (a, b) = (a, fromFW $ bit7 b)
+
+testUFromFW :: Result
+testUFromFW = allEqual $ map t [(0, 0), (1, 129)]
+  where t (a, b) = (a, fromFW $ ubit7 b)
 
 testFromEnum :: Result
 testFromEnum = allEqual $ map t [ (7, bit 7 + 7), (-1, -1), (-64, -64), (63, 63)]
   where t (a, b) = (a, fromEnum $ bit7 b)
 
 testUFromEnum :: Result
-testUFromEnum = findFail $ map f vec
-  where vec = [(7, U7 (bit 7 + 7)), (0, U7 (bit 7)), (127, U7 127)]
-        f (r, t) | r == fromEnum t = Pass
-                 | otherwise = Fail ("Result=" ++ (show $ fromEnum t) ++ ", ref=" ++ (show r))
+testUFromEnum = allEqual $ map t [(7, bit 7 + 7), (0, bit 7), (127, 127)]
+  where t (a, b) = (a, fromEnum $ ubit7 b)
 
 testBounded :: Result
 testBounded = allEqual [ (-64, fromEnum (minBound::Bit7))
                        , (63, fromEnum (maxBound::Bit7))]
 
 testUBounded :: Result
-testUBounded | min /= 0 = Fail ("min=" ++ (show min))
-             | max /= 127 = Fail ("max=" ++ (show max))
-             | otherwise = Pass
-  where min = fromEnum (minBound::U7)
-        max = fromEnum (maxBound::U7)
+testUBounded = allEqual [ (0, fromFW (minBound::UBit7))
+                        , (127, fromFW (maxBound::UBit7))
+                        ]
 
 testEq :: Result
 testEq = allEqual $ map t [(0, 0), (63, 63), (64, (-64)), (-1, 127)]
   where t (a, b) = (bit7 a, bit7 b)
 
 testUEq :: Result
-testUEq = findFail $ (map f vec) ++ (map f' vec')
-  where vec = [(0, U7 0), (0, U7 128), (127, U7 127), (127, U7 $ bit 7 + 127)]
-        f (r, t) | U7 r == t = Pass
-                 | otherwise = Fail $ "When testing (==): r=" ++ (show r) ++ ", t=" ++ (show t)
-        vec' = [(1, U7 0)]
-        f' (r, t) | U7 r /= t = Pass
-                  | otherwise = Fail $ "When testing (/=): r=" ++ (show r) ++ ", t=" ++ (show t)
+testUEq = allEqual [ (bit7 0, bit7 0), (bit7 0, bit7 128)
+                   , (bit7 127, bit7 127), (bit7 127, bit7 $ bit 7 + 127)]
 
 testOrd :: Result
 testOrd = allEqual ((zip (repeat LT) $ map t [(-1, 0), (0, 1), (64, -63)])
@@ -172,6 +167,7 @@ tests = return ( map signedTestInstance [ (testShow, "testShow")
                                         ]
                  ++
                  map unsignedTestInstance [ (testUShow, "testUShow")
+                                          , (testUFromFW, "testUFromFW")
                                           , (testUFromEnum, "testUFromEnum")
                                           , (testUBounded, "testUBounded")
                                           , (testUEq, "testUEq")

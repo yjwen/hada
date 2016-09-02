@@ -99,7 +99,8 @@ declareUFW typeStr helperFunStr bitWidth = do
   conName <- newName typeStr
   a <- newName "a"
   hiddenTypeName <- newName $ typeStr ++ "__"
-  let tHidden = conT hiddenTypeName
+  let eBitWidth = litE $ IntegerL $ toInteger bitWidth
+      tHidden = conT hiddenTypeName
       ta = varT a
   sequence [ dataFWD hiddenTypeName conName
            , tySynFWD typeName hiddenTypeName baseName
@@ -107,6 +108,22 @@ declareUFW typeStr helperFunStr bitWidth = do
            , funP0D helperFunStr (conE conName)
            , instanceD (cxt [appT tShow ta]) (appT tShow $ appT tHidden ta)
              [funP1D "show" conName a [| $(litE $ StringL typeStr) ++ " " ++ (show $(varE a))|]]
+           , instanceD (cxt []) (appT tFixedWidth tHidden)
+             [ funP1D "fromFW" conName a [| extendUnsigned $(varE a) $(eBitWidth)|]
+             , funP0D "toFW" $ conE conName
+             ]
+           , instanceD (cxt [appT tEnum ta, appT tBits ta]) (appT tEnum $ appT tHidden ta)
+             [ funP0D "fromEnum" [| fromEnum . fromFW |]
+             , funP0D "toEnum" [| toFW . toEnum |]
+             ]
+           , instanceD (cxt [appT tBounded ta, appT tBits ta]) (appT tBounded $ appT tHidden ta)
+             [ funP0D "minBound" [| toFW zeroBits |]
+             , funP0D "maxBound" [| toFW $ complement $ shiftL (complement zeroBits) $(eBitWidth) |]
+             ]
+           , instanceD (cxt [appT tEq ta, appT tBits ta]) (appT tEq $ appT tHidden ta)
+             [ funP0D "==" [| \ a b -> (fromFW a) == (fromFW b)|]
+             , funP0D "/=" [| \ a b -> (fromFW a) /= (fromFW b)|]
+             ]
            ]
   
 newtypeFWD :: Name -> Name -> Name -> DecQ
@@ -135,8 +152,9 @@ extendSigned v width = case (testBit v (width - 1)) of
   where mask0 = complement mask1
         mask1 = shiftL (complement zeroBits) width
 
-extendUnsigned :: Word -> Int -> Word
-extendUnsigned v width = v .&. (bit width - 1)
+extendUnsigned :: (Bits a) => a -> Int -> a
+extendUnsigned v width = v .&. (complement $ shiftL (complement zeroBits) width)
+
 -- Helper functions for declaring functions
 -- Function with zero argument, as minBound = expr
 funP0D :: String -> ExpQ -> DecQ
