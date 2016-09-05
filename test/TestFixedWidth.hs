@@ -72,8 +72,8 @@ testEq = allEqual $ map t [(0, 0), (63, 63), (64, (-64)), (-1, 127)]
   where t (a, b) = (bit7 a, bit7 b)
 
 testUEq :: Result
-testUEq = allEqual [ (bit7 0, bit7 0), (bit7 0, bit7 128)
-                   , (bit7 127, bit7 127), (bit7 127, bit7 $ bit 7 + 127)]
+testUEq = allEqual [ (ubit7 0, ubit7 0), (ubit7 0, ubit7 128)
+                   , (ubit7 127, ubit7 127), (ubit7 127, ubit7 $ bit 7 + 127)]
 
 testOrd :: Result
 testOrd = allEqual ((zip (repeat LT) $ map t [(-1, 0), (0, 1), (64, -63)])
@@ -85,13 +85,12 @@ testOrd = allEqual ((zip (repeat LT) $ map t [(-1, 0), (0, 1), (64, -63)])
 
 
 testUOrd :: Result
-testUOrd | compare l r /= LT = fail l r "less than"
-         | compare r l /= GT = fail l r "greater than"
-         | compare l l /= EQ = fail l l "equal to"
-         | otherwise = Pass
-  where l = U7 0
-        r = U7 127
-        fail l r str = Fail $ (show l) ++ " is not " ++ str ++ " " ++ (show r)
+testUOrd = allEqual [ (LT, compare l r)
+                    , (GT, compare r l)
+                    , (EQ, compare l l)
+                    ]
+  where l = ubit7 0
+        r = ubit7 127
 
 testNum :: Result
 testNum = allEqual [ (min, max + (bit7 1))
@@ -110,32 +109,37 @@ testNum = allEqual [ (min, max + (bit7 1))
         max = maxBound::Bit7
 
 testUNum :: Result
-testUNum | max + one /= min = fail (Just max) "+" one min
-         -- | min - one /= max = fail (Just min) "-" one max
-         | max * one /= max = fail (Just max) "*" one max
-         | min * one /= min = fail (Just min) "*" one min
-         -- - one /= max = fail Nothing "-" one max
-         | abs min /= min = fail Nothing "abs" min min
-         | abs max /= max = fail Nothing "abs" max max
-         | otherwise = Pass
-  where max = maxBound::U7
-        min = minBound::U7
-        one = U7 1
-        fail :: Maybe U7 -> String -> U7 -> U7 -> Result
-        fail l op r ref = Fail "Failed."
---         -- fail l op r ref = Fail $ l' ++ op ++ " " ++ (show r) ++ " /= " ++ (show ref)
---         --   where l'= case l of
---         --               Just x -> (show x) ++ " "
---         --               otherwise -> ""
+testUNum = allEqual[ (min, max + one)
+                   , (max, min - one)
+                   , (max, max * one)
+                   , (min, min * one)
+                   , (max, - one)
+                   , (min, abs min)
+                   , (max, abs max)
+                   ]
+  where max = maxBound::UBit7
+        min = minBound::UBit7
+        one = ubit7 1
 
 testReal :: Result
 testReal = allEqual [(4 % 2, toRational $ bit7 2)]
+
+testUReal :: Result
+testUReal = allEqual [(4 % 2, toRational $ ubit7 2)]
 
 testIntegral :: Result
 testIntegral = allEqual $ zip ref test
   where vs = [(7, 2), (-7, 2), (-7, -2)]
         mref op = map (\ (a, b) -> bit7 $ op a b)
         mtest op = map (\ (a, b) -> op (bit7 a) (bit7 b))
+        ref = (mref div vs) ++ (mref mod vs) ++ (mref quot vs) ++ (mref rem vs)
+        test = (mtest div vs) ++ (mtest mod vs) ++ (mtest quot vs) ++ (mtest rem vs)
+
+testUIntegral :: Result
+testUIntegral = allEqual $ zip ref test
+  where vs = [(7, 2)]
+        mref op = map (\ (a, b) -> ubit7 $ op a b)
+        mtest op = map (\ (a, b) -> op (ubit7 a) (ubit7 b))
         ref = (mref div vs) ++ (mref mod vs) ++ (mref quot vs) ++ (mref rem vs)
         test = (mtest div vs) ++ (mtest mod vs) ++ (mtest quot vs) ++ (mtest rem vs)
 
@@ -173,5 +177,7 @@ tests = return ( map signedTestInstance [ (testShow, "testShow")
                                           , (testUEq, "testUEq")
                                           , (testUOrd, "testUOrd")
                                           , (testUNum, "testUNum")
+                                          , (testUReal, "testUReal")
+                                          , (testUIntegral, "testUIntegral")
                                           ])
 

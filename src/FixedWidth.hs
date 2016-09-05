@@ -124,6 +124,28 @@ declareUFW typeStr helperFunStr bitWidth = do
              [ funP0D "==" [| \ a b -> (fromFW a) == (fromFW b)|]
              , funP0D "/=" [| \ a b -> (fromFW a) /= (fromFW b)|]
              ]
+           , instanceD (cxt [appT tOrd ta, appT tBits ta]) (appT tOrd $ appT tHidden ta)
+             [funP0D "compare" [| \ a b -> compare (fromFW a) (fromFW b) |]]
+           , instanceD (cxt [appT tNum ta, appT tBits ta]) (appT tNum $ appT tHidden ta)
+             [ funP0D "+" [| \ a b -> toFW $ (fromFW a) + (fromFW b) |]
+             , funP0D "-" [| \ a b -> toFW $ (fromFW a) - (fromFW b) |]
+             , funP0D "*" [| \ a b -> toFW $ (fromFW a) * (fromFW b) |]
+             , funP0D "abs" [| toFW . abs . fromFW |]
+             , funP0D "signum" [| toFW . signum . fromFW |]
+             , funP0D "negate" [| toFW . negate . fromFW |]
+             , funP0D "fromInteger" [| toFW . fromInteger |]
+             ]
+           , instanceD (cxt [appT tReal ta, appT tBits ta]) (appT tReal $ appT tHidden ta)
+             [funP0D "toRational" [| toRational . fromFW |]]
+           , instanceD (cxt [appT tIntegral ta, appT tBits ta]) (appT tIntegral $ appT tHidden ta)
+             [ funP0D "quot" [| \ a b -> toFW $ quot (fromFW a) (fromFW b) |]
+             , funP0D "rem"  [| \ a b -> toFW $ rem (fromFW a) (fromFW b) |]
+             , funP0D "div"  [| \ a b -> toFW $ div (fromFW a) (fromFW b) |]
+             , funP0D "mod"  [| \ a b -> toFW $ mod (fromFW a) (fromFW b) |]
+             , funP0D "quotRem" [| \ a b -> let (x, y) = quotRem (fromFW a) (fromFW b) in (toFW x, toFW y) |]
+             , funP0D "divMod" [| \ a b -> let (x, y) = divMod (fromFW a) (fromFW b) in (toFW x, toFW y) |]
+             , funP0D "toInteger" [| toInteger .fromFW |]
+             ]
            ]
   
 newtypeFWD :: Name -> Name -> Name -> DecQ
