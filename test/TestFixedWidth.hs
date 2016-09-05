@@ -10,21 +10,6 @@ import Data.Ratio
 
 $(declareFW "Bit7" "bit7" 7)
 $(declareUFW "UBit7" "ubit7" 7)
-$(declareUnsignedFW "U7" "U7" 7)
-
-findFail :: [Result] -> Result
-findFail rs = case find f rs of
-                Nothing -> Pass
-                Just x -> x
-  where f Pass = False
-        f (Fail _) = True
-  
-
-testVector :: [(a, b)] -> (a -> b -> Result) -> Result
-testVector [] f = Pass
-testVector ((r, t):vs) f | result == Pass = testVector vs f
-                         | otherwise = result
-  where result = f r t
 
 testShow :: Result
 testShow | result == ref = Pass
