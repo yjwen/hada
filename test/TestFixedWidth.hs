@@ -12,10 +12,7 @@ $(declareFW "Bit7" "bit7" 7)
 $(declareUFW "UBit7" "ubit7" 7)
 
 testShow :: Result
-testShow | result == ref = Pass
-         | otherwise = Fail ("Result=" ++ result ++ ", ref=" ++ ref)
-         where result = show $ bit7 1
-               ref = "Bit7 1"
+testShow = allEqual [("Bit7 1", show $ bit7 129)]
 
 testUShow :: Result
 testUShow | result == ref = Pass
@@ -129,6 +126,29 @@ testUIntegral = allEqual $ zip ref test
         test = (mtest div vs) ++ (mtest mod vs) ++ (mtest quot vs) ++ (mtest rem vs)
 
 
+testBitOps :: Result
+testBitOps = allEqual [ (bit7 0, bit7 1 .&. bit7 2)
+                      , (bit7 3, bit7 1 .|. bit7 2)
+                      , (bit7 1, bit7 2 `xor` bit7 3)
+                      , (bit7 0, complement $ bit7 127)
+                      , (bit7 2, shiftL (bit7 1) 1)
+                      , (bit7 126, shiftL (bit7 127) 1)
+                      , (bit7 1, shiftR (bit7 2) 1)
+                      , (bit7 31, shiftR (bit7 63) 1)
+                      , (bit7 129, rotateL (bit7 0x40) 1)
+                      , (bit7 0x7e, rotateL (bit7 0xf7) 4)
+                      , (bit7 0x40, rotateR (bit7 1) 1)
+                      , (bit7 0x3f , rotateR (bit7 0xf7) 4)
+                      ]
+
+testBits :: Result
+testBits = allEqual [ ("Just 7", show $ bitSizeMaybe $ bit7 1)
+                    , ("True", show $ isSigned $ bit7 1)
+                    , ("True", show $ testBit (bit7 32) 5)
+                    , ("Bit7 32", show ((bit 5)::Bit7))
+                    , ("7", show $ popCount $ bit7 (-1))
+                    ]
+
 signedTestInstance (test, name) = Test theInstance
   where theInstance = TestInstance { run = return $ Finished test
                                    , name = name
@@ -153,6 +173,8 @@ tests = return ( map signedTestInstance [ (testShow, "testShow")
                                         , (testNum, "testNum")
                                         , (testReal, "testReal")
                                         , (testIntegral, "testIntegral")
+                                        , (testBitOps, "testBitOps")
+                                        , (testBits, "testBits")
                                         ]
                  ++
                  map unsignedTestInstance [ (testUShow, "testUShow")
