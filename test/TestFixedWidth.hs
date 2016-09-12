@@ -149,6 +149,29 @@ testBits = allEqual [ ("Just 7", show $ bitSizeMaybe $ bit7 1)
                     , ("7", show $ popCount $ bit7 (-1))
                     ]
 
+testUBitOps :: Result
+testUBitOps = allEqual [ (ubit7 0, ubit7 1 .&. ubit7 2)
+                       , (ubit7 3, ubit7 1 .|. ubit7 2)
+                       , (ubit7 1, ubit7 2 `xor` ubit7 3)
+                       , (ubit7 0, complement $ ubit7 127)
+                       , (ubit7 2, shiftL (ubit7 1) 1)
+                       , (ubit7 126, shiftL (ubit7 127) 1)
+                       , (ubit7 1, shiftR (ubit7 2) 1)
+                       , (ubit7 31, shiftR (ubit7 63) 1)
+                       , (ubit7 129, rotateL (ubit7 0x40) 1)
+                       , (ubit7 0x7e, rotateL (ubit7 0xf7) 4)
+                       , (ubit7 0x40, rotateR (ubit7 1) 1)
+                       , (ubit7 0x3f , rotateR (ubit7 0xf7) 4)
+                       ]
+
+testUBits :: Result
+testUBits = allEqual [ ("Just 7", show $ bitSizeMaybe $ ubit7 1)
+                     , ("False", show $ isSigned $ ubit7 1)
+                     , ("True", show $ testBit (ubit7 32) 5)
+                     , ("UBit7 32", show ((bit 5)::UBit7))
+                     , ("7", show $ popCount $ ubit7 (-1))
+                     ]
+
 signedTestInstance (test, name) = Test theInstance
   where theInstance = TestInstance { run = return $ Finished test
                                    , name = name
@@ -186,5 +209,7 @@ tests = return ( map signedTestInstance [ (testShow, "testShow")
                                           , (testUNum, "testUNum")
                                           , (testUReal, "testUReal")
                                           , (testUIntegral, "testUIntegral")
+                                          , (testUBitOps, "testUBitOps")
+                                          , (testUBits, "testUBits")
                                           ])
 

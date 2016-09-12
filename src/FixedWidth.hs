@@ -162,6 +162,22 @@ declareUFW typeStr helperFunStr bitWidth = do
              , funP0D "divMod" [| \ a b -> let (x, y) = divMod (fromFW a) (fromFW b) in (toFW x, toFW y) |]
              , funP0D "toInteger" [| toInteger .fromFW |]
              ]
+           , instanceD (cxt [appT tBits ta]) (appT tBits $ appT tHidden ta)
+             [ funP0D ".&." [| \ a b -> toFW $ (fromFW a) .&. (fromFW b) |]
+             , funP0D ".|." [| \ a b -> toFW $ (fromFW a) .|. (fromFW b) |]
+             , funP0D "xor" [| \ a b -> toFW $ xor (fromFW a) (fromFW b) |]
+             , funP0D "complement" [| toFW . complement . fromFW |]
+             , funP0D "shiftL" [| \ a i -> toFW $ shiftL (fromFW a) i |]
+             , funP0D "shiftR" [| \ a i -> toFW $ shiftR (fromFW a) i |]
+             , funP0D "rotateL" [| \ a i -> toFW $ rotateLFW $(eBitWidth) (fromFW a) i |]
+             , funP0D "rotateR" [| \ a i -> toFW $ rotateRFW $(eBitWidth) (fromFW a) i |]
+             , funP0D "bitSize" [| \ a -> $(eBitWidth) |]
+             , funP0D "bitSizeMaybe" [| \ a -> Just $(eBitWidth) |]
+             , funP0D "isSigned" [| \ a -> False |]
+             , funP0D "testBit" [| testBit . fromFW |]
+             , funP0D "bit" [| toFW . bit |]
+             , funP0D "popCount" [| (popCountFW $(eBitWidth)) . fromFW |]
+             ]
            ]
   
 extendSigned :: (Bits a) => a -> Int -> a
