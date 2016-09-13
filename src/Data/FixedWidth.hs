@@ -1,5 +1,5 @@
 {-# LANGUAGE TemplateHaskell #-}
-module FixedWidth where
+module Data.FixedWidth where
 
 import Language.Haskell.TH
 import Data.Bits

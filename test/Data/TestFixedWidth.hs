@@ -1,9 +1,9 @@
 {-# LANGUAGE TemplateHaskell #-}
-module TestFixedWidth (tests) where
+module Data.TestFixedWidth (tests) where
 
 import Distribution.TestSuite
 
-import FixedWidth
+import Data.FixedWidth
 import Data.Bits
 import Data.List
 import Data.Ratio
