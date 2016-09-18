@@ -1,9 +1,51 @@
 {-# LANGUAGE TemplateHaskell #-}
-module Data.FixedWidth where
+
+-- |
+-- Module : Data.FixedWidth
+-- Description : Template haskell functions to declare arbitrary fixed-width integer types.
+-- Copyright : (c) Yujie Wen, 2016
+-- License : LGPL-3
+-- Maintainer : yjwen.ty@gmail.com
+-- Stability : Experimental
+-- Portability : POSIX
+--
+-- This module provide two template haskell functions to declare signed
+-- and unsigned integer types of arbitrary bit-width.
+--
+--   * 'declareFW' to declare signed fixed-width types.
+--   * 'declareUFW' to declare unsigned fixed-width types.
+--
+-- The declared types will be instances of the following classes:
+--
+--   * 'Show'
+--   * 'Enum'
+--   * 'Bits'
+--   * 'Bounded'
+--   * 'Eq'
+--   * 'Ord'
+--   * 'Num'
+--   * 'Real'
+--   * 'Integral'
+
+-- module Data.FixedWidth (
+--   -- * Functions
+--   declareFW,
+--   declareUFW
+--                        ) where
+module Data.FixedWidth (
+  -- * Classes
+  FixedWidth (toFW, fromFW),
+  -- * Functions
+  declareFW, declareUFW) where
 
 import Language.Haskell.TH
 import Data.Bits
 
+-- | The class 'FixedWidth' defines conversion functions from integer
+-- type to fixed-width ones, and vice versa. Each fixed-width type
+-- declared will be an instance of 'FixedWidth' class, so that you can
+-- use 'fromFW' and 'toFW' to convert values between an integer type
+-- and the declared fixed-width type.
 class FixedWidth f where
   fromFW :: Bits a => f a -> a
   toFW :: a -> f a
@@ -34,8 +76,16 @@ tNum = conT $ mkName "Num"
 tReal = conT $ mkName "Real"
 tIntegral = conT $ mkName "Integral"
 
-declareFW :: String -> String -> Int -> DecsQ
-declareFW typeStr helperFunStr bitWidth = do
+-- | @'declareFW' t w f@ declares a signed fixed-width type @t@ of
+-- width @w@, and a helper function @f@ for creating values of type
+-- @t@ from integer types.
+--
+-- For example, @$(declareFW \"Bit7\" 7 \"bit7\")@ declares a type
+-- @Bit7@ of 7-bit values, ranging from -64 to 63, and a function
+-- @bit7@ to create @Bit7@ values from @Int@ values. @bit7@'s type
+-- signiture is @bit7 :: Int -> Bit7@.
+declareFW :: String -> Int -> String -> DecsQ
+declareFW typeStr bitWidth helperFunStr = do
   let typeName = mkName typeStr
       helperFunName = mkName helperFunStr
       baseName = mkName "Int"
@@ -107,8 +157,15 @@ declareFW typeStr helperFunStr bitWidth = do
              ]
            ]
 
-declareUFW :: String -> String -> Int -> DecsQ
-declareUFW typeStr helperFunStr bitWidth = do
+-- | @'declareUFW' t w f@ declares a unsigned fixed-width type @t@ of
+-- width @w@, and a helper function @f@ for creating values of type
+-- @t@ from integer types.
+--
+-- For example, @$(declareUFW \"UBit7\" 7 \"ubit7\")@ declares a type @UBit7@
+-- of 7-bit values, ranging from 0 to 127, and a function @ubit7@ to create @UBit7@ values from
+-- @Int@ values. @ubit7@'s type signiture is @bit7 :: Word -> Bit7@.
+declareUFW :: String -> Int -> String -> DecsQ
+declareUFW typeStr bitWidth helperFunStr = do
   let typeName = mkName typeStr
       helperFunName = mkName helperFunStr
       baseName = mkName "Word"

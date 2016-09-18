@@ -1,4 +1,5 @@
 {-# LANGUAGE TemplateHaskell #-}
+
 module Data.TestFixedWidth (tests) where
 
 import Distribution.TestSuite
@@ -8,8 +9,8 @@ import Data.Bits
 import Data.List
 import Data.Ratio
 
-$(declareFW "Bit7" "bit7" 7)
-$(declareUFW "UBit7" "ubit7" 7)
+$(declareFW "Bit7" 7 "bit7")
+$(declareUFW "UBit7" 7 "ubit7")
 
 testShow :: Result
 testShow = allEqual [("Bit7 1", show $ bit7 129)]
