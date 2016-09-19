@@ -9,11 +9,13 @@
 -- Stability : Experimental
 -- Portability : POSIX
 --
--- This module provide two template haskell functions to declare signed
--- and unsigned integer types of arbitrary bit-width.
+-- This module provide two template haskell functions for declaring
+-- integer types of arbitrary bit-width.
 --
---   * 'declareFW' to declare signed fixed-width types.
---   * 'declareUFW' to declare unsigned fixed-width types.
+--   * 'declareFW' for declaring signed fixed-width types.
+--   * 'declareUFW' for declaring unsigned fixed-width types.
+--
+-- = Instances
 --
 -- The declared types will be instances of the following classes:
 --
@@ -26,12 +28,33 @@
 --   * 'Num'
 --   * 'Real'
 --   * 'Integral'
+--
+-- = Base Type
+--
+-- The declared fixed-width type is isomorphic to one of the integer
+-- types defined in 'Data.Int', for signed types, and 'Data.Word', for
+-- unsigned types. The isomorphic type is noted as the /base type/.
+--
+-- Given a bit-width @w@, the base type is the one of the minimum
+-- bit-width larger than @w@. For example, the base type of a 7-bit
+-- signed type is 'Int8', and that of a 12-bit unsigned type is
+-- 'Word16'.
+--
+-- = Type Conversion #type-conversion#
+--
+-- The declared fixed-width type can be converted to its base type by
+-- function 'fromFW', or vice versa by 'toFW'.
+--
+-- A value of base type is truncated when it is converted to
+-- fixed-width type. For example, given a declared 7-bit unsigned type
+-- @UBit7@, the following expression is @True@:
+--
+-- @
+-- ((toFW 0xFF)::UBit7) == ((toFW 0x7F)::UBit7)
+-- @
 
--- module Data.FixedWidth (
---   -- * Functions
---   declareFW,
---   declareUFW
---                        ) where
+
+
 module Data.FixedWidth (
   -- * Classes
   FixedWidth (toFW, fromFW),
@@ -40,15 +63,15 @@ module Data.FixedWidth (
 
 import Language.Haskell.TH
 import Data.Bits
+import Data.Int
 
 -- | The class 'FixedWidth' defines conversion functions from integer
--- type to fixed-width ones, and vice versa. Each fixed-width type
--- declared will be an instance of 'FixedWidth' class, so that you can
--- use 'fromFW' and 'toFW' to convert values between an integer type
--- and the declared fixed-width type.
+-- type to fixed-width ones, and vice versa. 
 class FixedWidth f where
   fromFW :: Bits a => f a -> a
+  -- ^ See the section of \"Type Conversion\" of module "Data.FixedWidth#type-conversion"
   toFW :: a -> f a
+  -- ^ See the section of \"Type Conversion\" of module "Data.FixedWidth#type-conversion"
 
 dataFWD :: Name -> Name -> DecQ
 dataFWD typeName conName = do
@@ -76,6 +99,19 @@ tNum = conT $ mkName "Num"
 tReal = conT $ mkName "Real"
 tIntegral = conT $ mkName "Integral"
 
+widthOf :: Bits a => a -> Int
+widthOf a = case (bitSizeMaybe a) of
+              Just w -> w
+              Nothing -> undefined
+baseType :: Int -> String
+baseType w | w <= 0 = undefined
+           | w <= (widthOf (1::Int8)) = "Int8"
+           | w <= (widthOf (1::Int16)) = "Int16"
+           | w <= (widthOf (1::Int32)) = "Int32"
+           | w <= (widthOf (1::Int64)) = "Int64"
+           | w <= (widthOf (1::Int)) = "Int"
+           | otherwise = undefined
+
 -- | @'declareFW' t w f@ declares a signed fixed-width type @t@ of
 -- width @w@, and a helper function @f@ for creating values of type
 -- @t@ from integer types.
@@ -88,7 +124,7 @@ declareFW :: String -> Int -> String -> DecsQ
 declareFW typeStr bitWidth helperFunStr = do
   let typeName = mkName typeStr
       helperFunName = mkName helperFunStr
-      baseName = mkName "Int"
+      baseName = mkName $ baseType bitWidth
   conName <- newName typeStr
   a <- newName "a"
   hiddenTypeName <- newName $ typeStr ++ "__"
@@ -157,6 +193,17 @@ declareFW typeStr bitWidth helperFunStr = do
              ]
            ]
 
+
+baseUType :: Int -> String
+baseUType w | w <= 0 = undefined
+            | w <= (widthOf (1::Int8)) = "Word8"
+            | w <= (widthOf (1::Int16)) = "Word16"
+            | w <= (widthOf (1::Int32)) = "Word32"
+            | w <= (widthOf (1::Int64)) = "Word64"
+            | w <= (widthOf (1::Int)) = "Word"
+            | otherwise = undefined
+
+
 -- | @'declareUFW' t w f@ declares a unsigned fixed-width type @t@ of
 -- width @w@, and a helper function @f@ for creating values of type
 -- @t@ from integer types.
@@ -168,7 +215,7 @@ declareUFW :: String -> Int -> String -> DecsQ
 declareUFW typeStr bitWidth helperFunStr = do
   let typeName = mkName typeStr
       helperFunName = mkName helperFunStr
-      baseName = mkName "Word"
+      baseName = mkName $ baseUType bitWidth
   conName <- newName typeStr
   a <- newName "a"
   hiddenTypeName <- newName $ typeStr ++ "__"

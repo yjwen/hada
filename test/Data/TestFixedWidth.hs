@@ -8,12 +8,23 @@ import Data.FixedWidth
 import Data.Bits
 import Data.List
 import Data.Ratio
+import Data.Int
+import Data.Word
 
 $(declareFW "Bit7" 7 "bit7")
+
 $(declareUFW "UBit7" 7 "ubit7")
 
+-- Type check at compilation time.
+checkBaseType :: Bit7 -> Bool
+checkBaseType a = fromFW (bit7 0) == (0::Int8)
+
+-- Type check at compilation time.
+checkUBaseType :: Bit7 -> Bool
+checkUBaseType a = fromFW (ubit7 0) == (0::Word8)
+
 testShow :: Result
-testShow = allEqual [("Bit7 1", show $ bit7 129)]
+testShow = allEqual [("Bit7 1", show $ bit7 $ -127)]
 
 testUShow :: Result
 testUShow | result == ref = Pass
@@ -26,11 +37,11 @@ allEqual ((r, t):xs) | r /= t = Fail $ "Ref=" ++ (show r) ++ ", test=" ++ (show 
                      | otherwise = allEqual xs
 
 testFromFW :: Result
-testFromFW = allEqual $ map t [(0, 0), (1, 129)]
+testFromFW = allEqual $ map t [(0, 0), (1, -127)]
   where t (a, b) = (a, fromFW $ bit7 b)
 
 testUFromFW :: Result
-testUFromFW = allEqual $ map t [(0, 0), (1, 129)]
+testUFromFW = allEqual $ map t [(0, 0), (1, -127)]
   where t (a, b) = (a, fromFW $ ubit7 b)
 
 testFromEnum :: Result
@@ -80,7 +91,7 @@ testNum = allEqual [ (min, max + (bit7 1))
                    , (max, min + (bit7 $ -1))
                    , (min, max - (bit7 $ -1))
                    , (max, min - (bit7 1))
-                   , (bit7 0, (bit7 1) * (bit7 128))
+                   , (bit7 0, (bit7 1) * (bit7 $ -127 - 1))
                    , (bit7 1, abs $ bit7 $ -1)
                    , (bit7 1, abs $ bit7 1)
                    , (bit7 $ -1, signum $ bit7 $ -1)
@@ -136,10 +147,10 @@ testBitOps = allEqual [ (bit7 0, bit7 1 .&. bit7 2)
                       , (bit7 126, shiftL (bit7 127) 1)
                       , (bit7 1, shiftR (bit7 2) 1)
                       , (bit7 31, shiftR (bit7 63) 1)
-                      , (bit7 129, rotateL (bit7 0x40) 1)
-                      , (bit7 0x7e, rotateL (bit7 0xf7) 4)
+                      , (bit7 $ -127, rotateL (bit7 0x40) 1)
+                      , (bit7 0x7e, rotateL (bit7 $ -9) 4)
                       , (bit7 0x40, rotateR (bit7 1) 1)
-                      , (bit7 0x3f , rotateR (bit7 0xf7) 4)
+                      , (bit7 0x3f , rotateR (bit7 $ -9) 4)
                       ]
 
 testBits :: Result
