@@ -24,10 +24,10 @@ Executable hada
   Build-depends: base >= 4.9, ghc >= 8.0.1, ghc-paths
         
 Library
-  Exposed-modules:     Data.FixedWidth
+  Exposed-modules:     Data.FixedWidth, Verilog
   -- other-modules:       
   Other-extensions:    TemplateHaskell
-  Build-depends:       base >=4.9, template-haskell >=2.11
+  Build-depends:       base >=4.9, template-haskell >=2.11, ghc >= 8.0.1
   Hs-source-dirs:      src
   Default-language:    Haskell2010
 
@@ -37,3 +37,11 @@ Test-Suite TestFixedWidth
   Default-language: Haskell2010
   Hs-source-dirs:      test
   Build-depends: base, Cabal > 1.9.2, hada
+
+Test-Suite TestVerilog
+  Type: detailed-0.9
+  Test-module: TestVerilog
+  Default-language: Haskell2010
+  Hs-source-dirs: test
+  Build-depends: base, Cabal > 1.9.2, ghc >= 8.0.1, split, hada
+              
