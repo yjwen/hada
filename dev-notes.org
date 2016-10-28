@@ -1,0 +1,43 @@
+* TODO Github Issue #1: Trivial combinational logic [0%]
+
+  Let's start from a very primitive Haskell function:
+  #+BEGIN_SRC haskell
+    abs :: Word -> Word -> Word
+    abs a b | a < b = b - a
+            | otherwise = a - b
+  #+END_SRC
+
+  Ideally, the Haskell function abs should be compiled to a Verilog
+  module
+  #+BEGIN_SRC verilog
+    module abs (a, b, out);
+      input [0:63] a;
+      input [0:63] b;
+      output [0:63] out;
+      assign out = (a < b) ? b - a : a - b;
+    endmodule
+  #+END_SRC
+
+** TODO Print the desugared bindings of the Haskell source
+
+   ~setSessionDynFlags~ is necessary if there is no dynamic flag to
+   set because ~setSessionDynFlags~ will initialize library search
+   path.  Otherwise, the GHC session will fail at finding dependent
+   modules even as ~Prelude~.
+   
+   Related articles:
+   * GHC compilation process:
+     [[https://ghc.haskell.org/trac/ghc/wiki/Commentary/Compiler/HscMain]]
+   * The Core data:
+     [[https://ghc.haskell.org/trac/ghc/wiki/Commentary/Compiler/CoreSynType]]
+
+   How to extract the ~CoreExpr~ from the desugared module? ~mg_bind
+   :: ModGuts -> CoreProgram~ return the binds.  [[http://www.stephendiehl.com/posts/ghc_02.html][Dive Into GHC: The
+   2nd article]] has some pretty examples about showing the core
+   program.
+   
+
+** TODO Data to represent verilog module
+   To design type types to represent a verilog module.  The data
+   should be an instance of class ~Outputable~, and can be
+   pretty-printed in Verilog format.
