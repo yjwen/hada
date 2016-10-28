@@ -4,7 +4,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 <head>
 <title>dev-notes</title>
-<!-- 2016-10-28 Fri 15:02 -->
+<!-- 2016-10-28 Fri 15:32 -->
 <meta  http-equiv="Content-Type" content="text/html;charset=utf-8" />
 <meta  name="generator" content="Org-mode" />
 <style type="text/css">
@@ -141,17 +141,17 @@ for the JavaScript code in this tag.
 <h2>Table of Contents</h2>
 <div id="text-table-of-contents">
 <ul>
-<li><a href="#sec-1">1. <span class="todo TODO">TODO</span> Github Issue #1: Trivial combinational logic <code>[0%]</code></a>
+<li><a href="#sec-1">1. <span class="todo TODO">TODO</span> Github Issue #1: Trivial combinational logic <code>[50%]</code></a>
 <ul>
 <li><a href="#sec-1-1">1.1. <span class="todo TODO">TODO</span> Print the desugared bindings of the Haskell source</a></li>
-<li><a href="#sec-1-2">1.2. <span class="todo TODO">TODO</span> Data to represent verilog module</a></li>
+<li><a href="#sec-1-2">1.2. <span class="done DONE">DONE</span> Data to represent the verilog netlist</a></li>
 </ul>
 </li>
 </ul>
 </div>
 </div>
 <div id="outline-container-sec-1" class="outline-2">
-<h2 id="sec-1"><span class="section-number-2">1</span> <span class="todo TODO">TODO</span> Github Issue #1: Trivial combinational logic <code>[0%]</code></h2>
+<h2 id="sec-1"><span class="section-number-2">1</span> <span class="todo TODO">TODO</span> Github Issue #1: Trivial combinational logic <code>[50%]</code></h2>
 <div class="outline-text-2" id="text-1">
 <p>
 Let's start from a very primitive Haskell function:
@@ -215,19 +215,38 @@ program.
 
 
 <div id="outline-container-sec-1-2" class="outline-3">
-<h3 id="sec-1-2"><span class="section-number-3">1.2</span> <span class="todo TODO">TODO</span> Data to represent verilog module</h3>
+<h3 id="sec-1-2"><span class="section-number-3">1.2</span> <span class="done DONE">DONE</span> Data to represent the verilog netlist</h3>
 <div class="outline-text-3" id="text-1-2">
 <p>
-To design type types to represent a verilog module.  The data
+To design data types to represent a verilog module. The data
 should be an instance of class <code>Outputable</code>, and can be
-pretty-printed in Verilog format.
+pretty-printed into Verilog language.
+</p>
+
+<p>
+As the first step, the data type should be capable of representing
+the target Verilog content.
+</p>
+<div class="org-src-container">
+
+<pre class="src src-verilog">module abs (a, b, out);
+  input [0:63] a;
+  input [0:63] b;
+  output [0:63] out;
+  assign out = (a &lt; b) ? b - a : a - b;
+endmodule
+</pre>
+</div>
+
+<p>
+Done with module <code>Verilog</code> (<code>Verilog.hs</code>.)
 </p>
 </div>
 </div>
 </div>
 </div>
 <div id="postamble" class="status">
-<p class="date">Created: 2016-10-28 Fri 15:02</p>
+<p class="date">Created: 2016-10-28 Fri 15:32</p>
 <p class="creator"><a href="http://www.gnu.org/software/emacs/">Emacs</a> 24.5.1 (<a href="http://orgmode.org">Org</a> mode 8.2.10)</p>
 <p class="validation"><a href="http://validator.w3.org/check?uri=referer">Validate</a></p>
 </div>

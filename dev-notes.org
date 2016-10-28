@@ -1,4 +1,4 @@
-* TODO Github Issue #1: Trivial combinational logic [0%]
+* TODO Github Issue #1: Trivial combinational logic [50%]
 
   Let's start from a very primitive Haskell function:
   #+BEGIN_SRC haskell
@@ -37,7 +37,23 @@
    program.
    
 
-** TODO Data to represent verilog module
-   To design type types to represent a verilog module.  The data
+** DONE Data to represent the verilog netlist
+   CLOSED: [2016-10-28 Fri 15:31]
+   To design data types to represent a verilog module. The data
    should be an instance of class ~Outputable~, and can be
-   pretty-printed in Verilog format.
+   pretty-printed into Verilog language.
+
+   As the first step, the data type should be capable of representing
+   the target Verilog content.
+   #+BEGIN_SRC verilog
+    module abs (a, b, out);
+      input [0:63] a;
+      input [0:63] b;
+      output [0:63] out;
+      assign out = (a < b) ? b - a : a - b;
+    endmodule
+   #+END_SRC
+
+   Done with module ~Verilog~ (~Verilog.hs~.)
+
+   
