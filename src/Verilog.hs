@@ -1,6 +1,9 @@
 module Verilog where
 
 import Outputable
+import qualified CoreSyn as C
+import Var
+import Name
 
 data Module = Module { moduleName :: String
                      , moduleInputs :: [Signal]
@@ -66,3 +69,17 @@ data BinOp = LessThan | Minus deriving (Show)
 instance Outputable BinOp where
   ppr LessThan = text "<"
   ppr Minus = text "-"
+
+
+coreToVerilog :: C.CoreBind -> Maybe Module
+coreToVerilog (C.NonRec v e) =  exprToVerilog (getOccString v) e
+coreToVerilog (C.Rec _) = undefined
+
+exprToVerilog :: Outputable a => String -> C.Expr a -> Maybe Module
+exprToVerilog m exp = case exp of
+                        (C.Lam v _) -> Just $ Module m [] [] []
+                        otherwise -> Nothing
+
+coreToVar :: C.CoreBind ->  Var
+coreToVar (C.NonRec v _) = v
+coreToVar _ = undefined

@@ -5,16 +5,19 @@ import DynFlags
 import HscTypes
 import Outputable
 
+import Verilog
+
 main :: IO ()
 main = do
   args <- getArgs
   result <- test $ head args
   putStrLn result 
-  -- res <- printCore $ head args
-  -- str <- runGhc (Just libdir) $ do
-  --          dflags <- getSessionDynFlags
-  --          return $ showSDoc dflags $ ppr res
-  -- putStrLn str
+
+filterTheNothing :: [Maybe a] -> [a]
+filterTheNothing [] = []
+filterTheNothing (x:xs) = case x of
+                            Just a -> a:filterTheNothing xs
+                            Nothing -> filterTheNothing xs
 
 test :: String -> IO String
 test targetFile =
@@ -29,8 +32,7 @@ test targetFile =
       p <- parseModule modSum
       t <- typecheckModule p
       d <- desugarModule t
-      return $ showSDoc dflags $ ppr $ (parsedSource d, typecheckedSource d)
+      let core = mg_binds $ coreModule d
+      return $ showPpr dflags $ (filterTheNothing $ map coreToVerilog core,
+                                 map coreToVar $ drop 1 core)
   
-readCoreModule :: DesugaredModule -> String
-readCoreModule d = let core = dm_core_module d
-                   in moduleNameString $ moduleName $ mg_module core
