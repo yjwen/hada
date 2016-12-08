@@ -1,4 +1,4 @@
-* TODO Github Issue #1: Trivial combinational logic [50%]
+* TODO Github Issue #1: Trivial combinational logic [60%]
 
   Let's start from a very primitive Haskell function:
   #+BEGIN_SRC haskell
@@ -18,7 +18,8 @@
     endmodule
   #+END_SRC
 
-** TODO Print the desugared bindings of the Haskell source
+** DONE Print the desugared bindings of the Haskell source
+   CLOSED: [2016-11-07 Mon 17:46]
 
    ~setSessionDynFlags~ is necessary if there is no dynamic flag to
    set because ~setSessionDynFlags~ will initialize library search
@@ -32,11 +33,77 @@
      [[https://ghc.haskell.org/trac/ghc/wiki/Commentary/Compiler/CoreSynType]]
 
    How to extract the ~CoreExpr~ from the desugared module? ~mg_bind
-   :: ModGuts -> CoreProgram~ return the binds.  [[http://www.stephendiehl.com/posts/ghc_02.html][Dive Into GHC: The
+   :: ModGuts -> CoreProgram~ return the binds. [[http://www.stephendiehl.com/posts/ghc_02.html][Dive Into GHC: The
    2nd article]] has some pretty examples about showing the core
    program.
-   
 
+   * ~HsSyn~ represents the AST parsed from source code.
+   * ~coreModule~ extracts ~ModGuts~ from desugered module.
+   * ~mg_binds~ return the core program from ~ModGuts~.
+** DONE Get Verilog module name from function name
+   CLOSED: [2016-11-21 Mon 17:40]
+
+   Get module name ~abc~ from the binding of ~abc~.
+
+   Reviewing GHC's code for pretty-printing ~CoreBind~.
+
+   There is:
+   #+BEGIN_SRC haskell
+     pprCoreExpr :: OutputableBndr b => Expr b -> SDoc
+   #+END_SRC
+   to do pretty-printing for expressions. But pretty-printing ~Expr~
+   doesn't show the function name.
+
+   It is the binding variable ~v~ in a ~NonRec v e~ that shows the
+   naming "abs". ~getOccString~ retrieve the string in ~v~.
+** TODO Get the input output ports for the Verilog module
+   
+   Functions are represented as curried lambda expressions.
+   So for ~abs~, its curried form is:
+   #+BEGIN_SRC haskell
+     abs = \a -> (\b -> case a < b of
+                          True -> b - a
+                          otherwise -> a - b)
+   #+END_SRC
+   And the lambda expressions are translated directly to ~Core.Lam v
+   e~, where ~v~ is the variable and ~e~ is the expression.
+
+   So to get all the inputs of a function, the corresponding
+   ~Core.Lam~ should be "de-curried", a process to strip off all the
+   consequence ~Core.Lam~ expression, and return the list of binders
+   of the stripped ~Core.Lam~ and the non-lambda expression it first
+   find.
+
+   Once the variable list is "de-curried" out, the bit-width 
+   of the Verilog module inputs are determined by the type information
+   of the variables.
+*** DONE To determine the bit-width for a binder ~Word~
+    CLOSED: [2016-12-08 Thu 17:09]
+    #+BEGIN_SRC haskell
+    varType :: Var -> Kind
+    #+END_SRC
+    retrieve the type of the binder (~Kind~ is a synonym of ~Type~).
+    
+    #+BEGIN_SRC haskell
+    splitTyConApp_maybe :: Type -> Maybe (TyCon, [Type])
+    #+END_SRC
+    try to split a type into a type constructor and the arguments to
+    that constructor, by which type ~Word~ is split into a ~TyCon~ of
+    ~Word~ and an empty argument list.
+
+    We can determine how a ~TyCon~ is defined in Haskell, either by
+    ~data~, ~type~ or any other constructs, by various predicates.
+    For ~Word~, it is defined by ~data~ construct. Then ~isAlgTyCon~
+    should return ~True~. 
+
+    ~TyCon~ is an instance of class ~NamedThing~,
+    so we can the name string by ~getOccString . getName~. For ~Word~,
+    it should return "Word".
+
+    When getting the string "Word", we know it is of type ~Word~, and 
+    the bit width is ~finiteBitSize (0::Word)~.
+    
+   
 ** DONE Data to represent the verilog netlist
    CLOSED: [2016-10-28 Fri 15:31]
    To design data types to represent a verilog module. The data
