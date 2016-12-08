@@ -33,6 +33,5 @@ test targetFile =
       t <- typecheckModule p
       d <- desugarModule t
       let core = mg_binds $ coreModule d
-      return $ showPpr dflags $ (filterTheNothing $ map coreToVerilog core,
-                                 map coreToVar $ drop 1 core)
+      return $ showPpr dflags $ filterTheNothing $ map coreToVerilog core
   

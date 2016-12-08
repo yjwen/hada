@@ -4,6 +4,10 @@ import Outputable
 import qualified CoreSyn as C
 import Var
 import Name
+import Type
+import TyCon
+import Data.Data
+import Data.Bits
 
 data Module = Module { moduleName :: String
                      , moduleInputs :: [Signal]
@@ -44,9 +48,12 @@ instance Outputable Signal where
 
 data Statement = Assign { assignLHS :: Signal
                         , assignRHS :: Expr
-                        } deriving Show
+                        }
+               | Comment String
+               deriving Show
 instance Outputable Statement where
   ppr (Assign lhs rhs) = text "assign" <+> refSignal lhs <+> equals <+> ppr rhs <> semi
+  ppr (Comment s) = text "//" <+> text s
 
 data Expr = ConditionalExpr { condition :: Expr
                             , trueClause :: Expr
@@ -75,11 +82,36 @@ coreToVerilog :: C.CoreBind -> Maybe Module
 coreToVerilog (C.NonRec v e) =  exprToVerilog (getOccString v) e
 coreToVerilog (C.Rec _) = undefined
 
-exprToVerilog :: Outputable a => String -> C.Expr a -> Maybe Module
-exprToVerilog m exp = case exp of
-                        (C.Lam v _) -> Just $ Module m [] [] []
-                        otherwise -> Nothing
+exprToVerilog :: String -> C.Expr Var -> Maybe Module
 
-coreToVar :: C.CoreBind ->  Var
-coreToVar (C.NonRec v _) = v
-coreToVar _ = undefined
+exprToVerilog m lam@(C.Lam v e) = Just $ Module m (map toSignal vs) [] [comments]
+  where comments = Comment $ showSDocUnsafe $ (vcat $ map (pprType . varType) vs) $$ (text $ show $ toConstr de)
+        (vs, de) = decurry lam
+        pprType :: Type -> SDoc
+        pprType t = case splitTyConApp_maybe t of
+                      Just p@(con, args) -> ppr p <+> (int $ tyConFamilySize con) <+> (int $ typeSize t)
+                      Nothing -> text "NotTyConApp"
+
+
+exprToVerilog _ _ = Nothing
+
+
+decurry :: C.Expr a -> ([a], C.Expr a)
+decurry (C.Lam v e) = (v:vs, dexp)
+  where (vs, dexp) = decurry e
+decurry e = ([], e)
+
+
+toSignal :: Var -> Signal
+toSignal v = if l - r == 0
+             then Signal (getOccString $ Var.varName v) Nothing
+             else Signal (getOccString $ Var.varName v) $ Just (l, r)
+  where (l, r) = case splitTyConApp_maybe $ varType v of
+                   Just (tyCon, args) ->
+                     if isAlgTyCon tyCon
+                     then case getOccString $ getName tyCon of
+                       "Word" -> (finiteBitSize (0::Word) - 1, 0)
+                       otherwise -> undefined
+                     else undefined
+                   Nothing -> undefined
+
