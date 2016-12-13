@@ -68,7 +68,7 @@
    And the lambda expressions are translated directly to ~Core.Lam v
    e~, where ~v~ is the variable and ~e~ is the expression.
 
-   So to get all the inputs of a function, the corresponding
+   To get all the inputs of a function, the corresponding
    ~Core.Lam~ should be "de-curried", a process to strip off all the
    consequence ~Core.Lam~ expression, and return the list of binders
    of the stripped ~Core.Lam~ and the non-lambda expression it first
@@ -76,8 +76,8 @@
 
    Once the variable list is "de-curried" out, the bit-width 
    of the Verilog module inputs are determined by the type information
-   of the variables.
-*** DONE To determine the bit-width for a binder ~Word~
+   of the variables. 
+*** DONE Determine the bit-width for a binder ~Word~
     CLOSED: [2016-12-08 Thu 17:09]
     #+BEGIN_SRC haskell
     varType :: Var -> Kind
@@ -104,6 +104,25 @@
     the bit width is ~finiteBitSize (0::Word)~.
     
    
+*** DONE Determine the output type of a binding
+    CLOSED: [2016-12-13 Tue 18:09]
+    
+    The type of the bound variable ~v~ in ~NonRec v e~ should be ~Word
+    -> Word -> Word~, of kind ~* -> *~.
+
+    The bound variable' type already gives the type of each input
+    variable and the type of the returned value, namely the type of
+    the output point of the Verilog module to be mapped to.
+
+    We need to de-curry the type of kind ~* -> *~ to a list of types
+    of kind ~*~ and return the input type list and the return type.
+
+    There is:
+    #+BEGIN_SRC haskell
+      splitFunTys :: Type -> ([Type], Type)
+    #+END_SRC
+    doing such de-currying.
+    
 ** DONE Data to represent the verilog netlist
    CLOSED: [2016-10-28 Fri 15:31]
    To design data types to represent a verilog module. The data

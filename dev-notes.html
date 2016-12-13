@@ -3,22 +3,29 @@
 "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
 <head>
-<title>dev-notes</title>
-<!-- 2016-10-28 Fri 15:59 -->
-<meta  http-equiv="Content-Type" content="text/html;charset=utf-8" />
-<meta  name="generator" content="Org-mode" />
+<!-- 2016-12-13 Tue 18:12 -->
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title></title>
+<meta name="generator" content="Org mode" />
 <style type="text/css">
  <!--/*--><![CDATA[/*><!--*/
-  .title  { text-align: center; }
+  .title  { text-align: center;
+             margin-bottom: .2em; }
+  .subtitle { text-align: center;
+              font-size: medium;
+              font-weight: bold;
+              margin-top:0; }
   .todo   { font-family: monospace; color: red; }
-  .done   { color: green; }
+  .done   { font-family: monospace; color: green; }
+  .priority { font-family: monospace; color: orange; }
   .tag    { background-color: #eee; font-family: monospace;
             padding: 2px; font-size: 80%; font-weight: normal; }
   .timestamp { color: #bebebe; }
   .timestamp-kwd { color: #5f9ea0; }
-  .right  { margin-left: auto; margin-right: 0px;  text-align: right; }
-  .left   { margin-left: 0px;  margin-right: auto; text-align: left; }
-  .center { margin-left: auto; margin-right: auto; text-align: center; }
+  .org-right  { margin-left: auto; margin-right: 0px;  text-align: right; }
+  .org-left   { margin-left: 0px;  margin-right: auto; text-align: left; }
+  .org-center { margin-left: auto; margin-right: auto; text-align: center; }
   .underline { text-decoration: underline; }
   #postamble p, #preamble p { font-size: 90%; margin: .2em; }
   p.verse { margin-left: 3%; }
@@ -45,27 +52,110 @@
     border: 1px solid black;
   }
   pre.src:hover:before { display: inline;}
-  pre.src-sh:before    { content: 'sh'; }
-  pre.src-bash:before  { content: 'sh'; }
+  /* Languages per Org manual */
+  pre.src-asymptote:before { content: 'Asymptote'; }
+  pre.src-awk:before { content: 'Awk'; }
+  pre.src-C:before { content: 'C'; }
+  /* pre.src-C++ doesn't work in CSS */
+  pre.src-clojure:before { content: 'Clojure'; }
+  pre.src-css:before { content: 'CSS'; }
+  pre.src-D:before { content: 'D'; }
+  pre.src-ditaa:before { content: 'ditaa'; }
+  pre.src-dot:before { content: 'Graphviz'; }
+  pre.src-calc:before { content: 'Emacs Calc'; }
   pre.src-emacs-lisp:before { content: 'Emacs Lisp'; }
-  pre.src-R:before     { content: 'R'; }
-  pre.src-perl:before  { content: 'Perl'; }
-  pre.src-java:before  { content: 'Java'; }
-  pre.src-sql:before   { content: 'SQL'; }
+  pre.src-fortran:before { content: 'Fortran'; }
+  pre.src-gnuplot:before { content: 'gnuplot'; }
+  pre.src-haskell:before { content: 'Haskell'; }
+  pre.src-java:before { content: 'Java'; }
+  pre.src-js:before { content: 'Javascript'; }
+  pre.src-latex:before { content: 'LaTeX'; }
+  pre.src-ledger:before { content: 'Ledger'; }
+  pre.src-lisp:before { content: 'Lisp'; }
+  pre.src-lilypond:before { content: 'Lilypond'; }
+  pre.src-lua:before { content: 'Lua'; }
+  pre.src-matlab:before { content: 'MATLAB'; }
+  pre.src-mscgen:before { content: 'Mscgen'; }
+  pre.src-ocaml:before { content: 'Objective Caml'; }
+  pre.src-octave:before { content: 'Octave'; }
+  pre.src-org:before { content: 'Org mode'; }
+  pre.src-oz:before { content: 'OZ'; }
+  pre.src-plantuml:before { content: 'Plantuml'; }
+  pre.src-processing:before { content: 'Processing.js'; }
+  pre.src-python:before { content: 'Python'; }
+  pre.src-R:before { content: 'R'; }
+  pre.src-ruby:before { content: 'Ruby'; }
+  pre.src-sass:before { content: 'Sass'; }
+  pre.src-scheme:before { content: 'Scheme'; }
+  pre.src-screen:before { content: 'Gnu Screen'; }
+  pre.src-sed:before { content: 'Sed'; }
+  pre.src-sh:before { content: 'shell'; }
+  pre.src-sql:before { content: 'SQL'; }
+  pre.src-sqlite:before { content: 'SQLite'; }
+  /* additional languages in org.el's org-babel-load-languages alist */
+  pre.src-forth:before { content: 'Forth'; }
+  pre.src-io:before { content: 'IO'; }
+  pre.src-J:before { content: 'J'; }
+  pre.src-makefile:before { content: 'Makefile'; }
+  pre.src-maxima:before { content: 'Maxima'; }
+  pre.src-perl:before { content: 'Perl'; }
+  pre.src-picolisp:before { content: 'Pico Lisp'; }
+  pre.src-scala:before { content: 'Scala'; }
+  pre.src-shell:before { content: 'Shell Script'; }
+  pre.src-ebnf2ps:before { content: 'ebfn2ps'; }
+  /* additional language identifiers per "defun org-babel-execute"
+       in ob-*.el */
+  pre.src-cpp:before  { content: 'C++'; }
+  pre.src-abc:before  { content: 'ABC'; }
+  pre.src-coq:before  { content: 'Coq'; }
+  pre.src-groovy:before  { content: 'Groovy'; }
+  /* additional language identifiers from org-babel-shell-names in
+     ob-shell.el: ob-shell is the only babel language using a lambda to put
+     the execution function name together. */
+  pre.src-bash:before  { content: 'bash'; }
+  pre.src-csh:before  { content: 'csh'; }
+  pre.src-ash:before  { content: 'ash'; }
+  pre.src-dash:before  { content: 'dash'; }
+  pre.src-ksh:before  { content: 'ksh'; }
+  pre.src-mksh:before  { content: 'mksh'; }
+  pre.src-posh:before  { content: 'posh'; }
+  /* Additional Emacs modes also supported by the LaTeX listings package */
+  pre.src-ada:before { content: 'Ada'; }
+  pre.src-asm:before { content: 'Assembler'; }
+  pre.src-caml:before { content: 'Caml'; }
+  pre.src-delphi:before { content: 'Delphi'; }
+  pre.src-html:before { content: 'HTML'; }
+  pre.src-idl:before { content: 'IDL'; }
+  pre.src-mercury:before { content: 'Mercury'; }
+  pre.src-metapost:before { content: 'MetaPost'; }
+  pre.src-modula-2:before { content: 'Modula-2'; }
+  pre.src-pascal:before { content: 'Pascal'; }
+  pre.src-ps:before { content: 'PostScript'; }
+  pre.src-prolog:before { content: 'Prolog'; }
+  pre.src-simula:before { content: 'Simula'; }
+  pre.src-tcl:before { content: 'tcl'; }
+  pre.src-tex:before { content: 'TeX'; }
+  pre.src-plain-tex:before { content: 'Plain TeX'; }
+  pre.src-verilog:before { content: 'Verilog'; }
+  pre.src-vhdl:before { content: 'VHDL'; }
+  pre.src-xml:before { content: 'XML'; }
+  pre.src-nxml:before { content: 'XML'; }
+  /* add a generic configuration mode; LaTeX export needs an additional
+     (add-to-list 'org-latex-listings-langs '(conf " ")) in .emacs */
+  pre.src-conf:before { content: 'Configuration File'; }
 
   table { border-collapse:collapse; }
   caption.t-above { caption-side: top; }
   caption.t-bottom { caption-side: bottom; }
   td, th { vertical-align:top;  }
-  th.right  { text-align: center;  }
-  th.left   { text-align: center;   }
-  th.center { text-align: center; }
-  td.right  { text-align: right;  }
-  td.left   { text-align: left;   }
-  td.center { text-align: center; }
+  th.org-right  { text-align: center;  }
+  th.org-left   { text-align: center;   }
+  th.org-center { text-align: center; }
+  td.org-right  { text-align: right;  }
+  td.org-left   { text-align: left;   }
+  td.org-center { text-align: center; }
   dt { font-weight: bold; }
-  .footpara:nth-child(2) { display: inline; }
-  .footpara { display: block; }
+  .footpara { display: inline; }
   .footdef  { margin-bottom: 1em; }
   .figure { padding: 1em; }
   .figure p { text-align: center; }
@@ -85,6 +175,7 @@
     { font-size: 10px; font-weight: bold; white-space: nowrap; }
   .org-info-js_search-highlight
     { background-color: #ffff00; color: #000000; font-weight: bold; }
+  .org-svg { width: 90%; }
   /*]]>*/-->
 </style>
 <script type="text/javascript">
@@ -136,28 +227,33 @@ for the JavaScript code in this tag.
 </head>
 <body>
 <div id="content">
-<h1 class="title">dev-notes</h1>
 <div id="table-of-contents">
 <h2>Table of Contents</h2>
 <div id="text-table-of-contents">
 <ul>
-<li><a href="#sec-1">1. <span class="todo TODO">TODO</span> Github Issue #1: Trivial combinational logic <code>[50%]</code></a>
+<li><a href="#org7ff3b92">1. <span class="todo TODO">TODO</span> Github Issue #1: Trivial combinational logic <code>[60%]</code></a>
 <ul>
-<li><a href="#sec-1-1">1.1. <span class="todo TODO">TODO</span> Print the desugared bindings of the Haskell source</a></li>
-<li><a href="#sec-1-2">1.2. <span class="done DONE">DONE</span> Data to represent the verilog netlist</a></li>
+<li><a href="#orgc99e49a">1.1. <span class="done DONE">DONE</span> Print the desugared bindings of the Haskell source</a></li>
+<li><a href="#org9761328">1.2. <span class="done DONE">DONE</span> Get Verilog module name from function name</a></li>
+<li><a href="#org210ae9e">1.3. <span class="todo TODO">TODO</span> Get the input output ports for the Verilog module</a>
+<ul>
+<li><a href="#org42718c4">1.3.1. <span class="done DONE">DONE</span> Determine the bit-width for a binder <code>Word</code></a></li>
+<li><a href="#orge8375f2">1.3.2. <span class="done DONE">DONE</span> Determine the output type of a binding</a></li>
+</ul>
+</li>
+<li><a href="#org95a4d3a">1.4. <span class="done DONE">DONE</span> Data to represent the verilog netlist</a></li>
 </ul>
 </li>
 </ul>
 </div>
 </div>
-<div id="outline-container-sec-1" class="outline-2">
-<h2 id="sec-1"><span class="section-number-2">1</span> <span class="todo TODO">TODO</span> Github Issue #1: Trivial combinational logic <code>[50%]</code></h2>
+<div id="outline-container-org7ff3b92" class="outline-2">
+<h2 id="org7ff3b92"><span class="section-number-2">1</span> <span class="todo TODO">TODO</span> Github Issue #1: Trivial combinational logic <code>[60%]</code></h2>
 <div class="outline-text-2" id="text-1">
 <p>
 Let's start from a very primitive Haskell function:
 </p>
 <div class="org-src-container">
-
 <pre class="src src-haskell"><span style="color: #93E0E3;">abs</span> <span style="color: #DFAF8F;">::</span> <span style="color: #7CB8BB;">Word</span> <span style="color: #DFAF8F;">-&gt;</span> <span style="color: #7CB8BB;">Word</span> <span style="color: #DFAF8F;">-&gt;</span> <span style="color: #7CB8BB;">Word</span>
 <span style="color: #93E0E3;">abs</span> a b <span style="color: #DFAF8F;">|</span> a <span style="color: #DFAF8F;">&lt;</span> b <span style="color: #DFAF8F;">=</span> b <span style="color: #DFAF8F;">-</span> a
         <span style="color: #DFAF8F;">|</span> otherwise <span style="color: #DFAF8F;">=</span> a <span style="color: #DFAF8F;">-</span> b
@@ -169,7 +265,6 @@ Ideally, the Haskell function abs should be compiled to a Verilog
 module
 </p>
 <div class="org-src-container">
-
 <pre class="src src-verilog"><span style="color: #F0DFAF; font-weight: bold;">module</span> <span style="color: #ffa500; font-weight: bold;">abs</span> (a, b, out);
   <span style="color: #7CB8BB;">input</span> [0:63] a;
   <span style="color: #7CB8BB;">input</span> [0:63] b;
@@ -180,8 +275,8 @@ module
 </div>
 </div>
 
-<div id="outline-container-sec-1-1" class="outline-3">
-<h3 id="sec-1-1"><span class="section-number-3">1.1</span> <span class="todo TODO">TODO</span> Print the desugared bindings of the Haskell source</h3>
+<div id="outline-container-orgc99e49a" class="outline-3">
+<h3 id="orgc99e49a"><span class="section-number-3">1.1</span> <span class="done DONE">DONE</span> Print the desugared bindings of the Haskell source</h3>
 <div class="outline-text-3" id="text-1-1">
 <p>
 <code>setSessionDynFlags</code> is necessary if there is no dynamic flag to
@@ -195,28 +290,164 @@ Related articles:
 </p>
 <ul class="org-ul">
 <li>GHC compilation process:
-<a href="https://ghc.haskell.org/trac/ghc/wiki/Commentary/Compiler/HscMain">https://ghc.haskell.org/trac/ghc/wiki/Commentary/Compiler/HscMain</a>
-</li>
+<a href="https://ghc.haskell.org/trac/ghc/wiki/Commentary/Compiler/HscMain">https://ghc.haskell.org/trac/ghc/wiki/Commentary/Compiler/HscMain</a></li>
 <li>The Core data:
-<a href="https://ghc.haskell.org/trac/ghc/wiki/Commentary/Compiler/CoreSynType">https://ghc.haskell.org/trac/ghc/wiki/Commentary/Compiler/CoreSynType</a>
-</li>
+<a href="https://ghc.haskell.org/trac/ghc/wiki/Commentary/Compiler/CoreSynType">https://ghc.haskell.org/trac/ghc/wiki/Commentary/Compiler/CoreSynType</a></li>
 </ul>
 
 <p>
-How to extract the <code>CoreExpr</code> from the desugared module? ~mg<sub>bind</sub>
-</p>
-<p>
-:: ModGuts -&gt; CoreProgram~ return the binds.  <a href="http://www.stephendiehl.com/posts/ghc_02.html">Dive Into GHC: The
+How to extract the <code>CoreExpr</code> from the desugared module? <code>mg_bind
+   :: ModGuts -&gt; CoreProgram</code> return the binds. <a href="http://www.stephendiehl.com/posts/ghc_02.html">Dive Into GHC: The
 2nd article</a> has some pretty examples about showing the core
 program.
 </p>
+
+<ul class="org-ul">
+<li><code>HsSyn</code> represents the AST parsed from source code.</li>
+<li><code>coreModule</code> extracts <code>ModGuts</code> from desugered module.</li>
+<li><code>mg_binds</code> return the core program from <code>ModGuts</code>.</li>
+</ul>
 </div>
 </div>
-
-
-<div id="outline-container-sec-1-2" class="outline-3">
-<h3 id="sec-1-2"><span class="section-number-3">1.2</span> <span class="done DONE">DONE</span> Data to represent the verilog netlist</h3>
+<div id="outline-container-org9761328" class="outline-3">
+<h3 id="org9761328"><span class="section-number-3">1.2</span> <span class="done DONE">DONE</span> Get Verilog module name from function name</h3>
 <div class="outline-text-3" id="text-1-2">
+<p>
+Get module name <code>abc</code> from the binding of <code>abc</code>.
+</p>
+
+<p>
+Reviewing GHC's code for pretty-printing <code>CoreBind</code>.
+</p>
+
+<p>
+There is:
+</p>
+<div class="org-src-container">
+<pre class="src src-haskell"><span style="color: #93E0E3;">pprCoreExpr</span> <span style="color: #DFAF8F;">::</span> <span style="color: #7CB8BB;">OutputableBndr</span> b <span style="color: #DFAF8F;">=&gt;</span> <span style="color: #7CB8BB;">Expr</span> b <span style="color: #DFAF8F;">-&gt;</span> <span style="color: #7CB8BB;">SDoc</span>
+</pre>
+</div>
+<p>
+to do pretty-printing for expressions. But pretty-printing <code>Expr</code>
+doesn't show the function name.
+</p>
+
+<p>
+It is the binding variable <code>v</code> in a <code>NonRec v e</code> that shows the
+naming "abs". <code>getOccString</code> retrieve the string in <code>v</code>.
+</p>
+</div>
+</div>
+<div id="outline-container-org210ae9e" class="outline-3">
+<h3 id="org210ae9e"><span class="section-number-3">1.3</span> <span class="todo TODO">TODO</span> Get the input output ports for the Verilog module</h3>
+<div class="outline-text-3" id="text-1-3">
+<p>
+Functions are represented as curried lambda expressions.
+So for <code>abs</code>, its curried form is:
+</p>
+<div class="org-src-container">
+<pre class="src src-haskell"><span style="color: #93E0E3;">abs</span> <span style="color: #DFAF8F;">=</span> <span style="color: #DFAF8F;">\</span>a <span style="color: #DFAF8F;">-&gt;</span> (<span style="color: #DFAF8F;">\</span>b <span style="color: #DFAF8F;">-&gt;</span> <span style="color: #F0DFAF; font-weight: bold;">case</span> a <span style="color: #DFAF8F;">&lt;</span> b <span style="color: #F0DFAF; font-weight: bold;">of</span>
+                     <span style="color: #7CB8BB;">True</span> <span style="color: #DFAF8F;">-&gt;</span> b <span style="color: #DFAF8F;">-</span> a
+                     otherwise <span style="color: #DFAF8F;">-&gt;</span> a <span style="color: #DFAF8F;">-</span> b)
+</pre>
+</div>
+<p>
+And the lambda expressions are translated directly to <code>Core.Lam v
+   e</code>, where <code>v</code> is the variable and <code>e</code> is the expression.
+</p>
+
+<p>
+To get all the inputs of a function, the corresponding
+<code>Core.Lam</code> should be "de-curried", a process to strip off all the
+consequence <code>Core.Lam</code> expression, and return the list of binders
+of the stripped <code>Core.Lam</code> and the non-lambda expression it first
+find.
+</p>
+
+<p>
+Once the variable list is "de-curried" out, the bit-width 
+of the Verilog module inputs are determined by the type information
+of the variables. 
+</p>
+</div>
+<div id="outline-container-org42718c4" class="outline-4">
+<h4 id="org42718c4"><span class="section-number-4">1.3.1</span> <span class="done DONE">DONE</span> Determine the bit-width for a binder <code>Word</code></h4>
+<div class="outline-text-4" id="text-1-3-1">
+<div class="org-src-container">
+<pre class="src src-haskell"><span style="color: #93E0E3;">varType</span> <span style="color: #DFAF8F;">::</span> <span style="color: #7CB8BB;">Var</span> <span style="color: #DFAF8F;">-&gt;</span> <span style="color: #7CB8BB;">Kind</span>
+</pre>
+</div>
+<p>
+retrieve the type of the binder (<code>Kind</code> is a synonym of <code>Type</code>).
+</p>
+
+<div class="org-src-container">
+<pre class="src src-haskell"><span style="color: #93E0E3;">splitTyConApp_maybe</span> <span style="color: #DFAF8F;">::</span> <span style="color: #7CB8BB;">Type</span> <span style="color: #DFAF8F;">-&gt;</span> <span style="color: #7CB8BB;">Maybe</span> (<span style="color: #7CB8BB;">TyCon</span>, [<span style="color: #7CB8BB;">Type</span>])
+</pre>
+</div>
+<p>
+try to split a type into a type constructor and the arguments to
+that constructor, by which type <code>Word</code> is split into a <code>TyCon</code> of
+<code>Word</code> and an empty argument list.
+</p>
+
+<p>
+We can determine how a <code>TyCon</code> is defined in Haskell, either by
+<code>data</code>, <code>type</code> or any other constructs, by various predicates.
+For <code>Word</code>, it is defined by <code>data</code> construct. Then <code>isAlgTyCon</code>
+should return <code>True</code>. 
+</p>
+
+<p>
+<code>TyCon</code> is an instance of class <code>NamedThing</code>,
+so we can the name string by <code>getOccString . getName</code>. For <code>Word</code>,
+it should return "Word".
+</p>
+
+<p>
+When getting the string "Word", we know it is of type <code>Word</code>, and 
+the bit width is <code>finiteBitSize (0::Word)</code>.
+</p>
+</div>
+</div>
+
+
+<div id="outline-container-orge8375f2" class="outline-4">
+<h4 id="orge8375f2"><span class="section-number-4">1.3.2</span> <span class="done DONE">DONE</span> Determine the output type of a binding</h4>
+<div class="outline-text-4" id="text-1-3-2">
+<p>
+The type of the bound variable <code>v</code> in <code>NonRec v e</code> should be <code>Word
+    -&gt; Word -&gt; Word</code>, of kind <code>* -&gt; *</code>.
+</p>
+
+<p>
+The bound variable' type already gives the type of each input
+variable and the type of the returned value, namely the type of
+the output point of the Verilog module to be mapped to.
+</p>
+
+<p>
+We need to de-curry the type of kind <code>* -&gt; *</code> to a list of types
+of kind <code>*</code> and return the input type list and the return type.
+</p>
+
+<p>
+There is:
+</p>
+<div class="org-src-container">
+<pre class="src src-haskell"><span style="color: #93E0E3;">splitFunTys</span> <span style="color: #DFAF8F;">::</span> <span style="color: #7CB8BB;">Type</span> <span style="color: #DFAF8F;">-&gt;</span> ([<span style="color: #7CB8BB;">Type</span>], <span style="color: #7CB8BB;">Type</span>)
+</pre>
+</div>
+<p>
+doing such de-currying.
+</p>
+</div>
+</div>
+</div>
+
+<div id="outline-container-org95a4d3a" class="outline-3">
+<h3 id="org95a4d3a"><span class="section-number-3">1.4</span> <span class="done DONE">DONE</span> Data to represent the verilog netlist</h3>
+<div class="outline-text-3" id="text-1-4">
 <p>
 To design data types to represent a verilog module. The data
 should be an instance of class <code>Outputable</code>, and can be
@@ -228,7 +459,6 @@ As the first step, the data type should be capable of representing
 the target Verilog content.
 </p>
 <div class="org-src-container">
-
 <pre class="src src-verilog"><span style="color: #F0DFAF; font-weight: bold;">module</span> <span style="color: #ffa500; font-weight: bold;">abs</span> (a, b, out);
   <span style="color: #7CB8BB;">input</span> [0:63] a;
   <span style="color: #7CB8BB;">input</span> [0:63] b;
@@ -246,8 +476,7 @@ Done with module <code>Verilog</code> (<code>Verilog.hs</code>.)
 </div>
 </div>
 <div id="postamble" class="status">
-<p class="date">Created: 2016-10-28 Fri 15:59</p>
-<p class="creator"><a href="http://www.gnu.org/software/emacs/">Emacs</a> 24.5.1 (<a href="http://orgmode.org">Org</a> mode 8.2.10)</p>
+<p class="date">Created: 2016-12-13 Tue 18:12</p>
 <p class="validation"><a href="http://validator.w3.org/check?uri=referer">Validate</a></p>
 </div>
 </body>
