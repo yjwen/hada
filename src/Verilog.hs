@@ -79,21 +79,15 @@ instance Outputable BinOp where
 
 
 coreToVerilog :: C.CoreBind -> Maybe Module
-coreToVerilog (C.NonRec v e) =  exprToVerilog (getOccString v) e
+coreToVerilog (C.NonRec b e) =  let (_, outputType) = splitFunTys $ varType b
+                                    (inputVars, decurriedExp) = decurry e
+                                    toSignal v = mkSignal (Var.varType v) (getOccString $ Var.varName v)
+                                    comments = Comment $ show $ toConstr decurriedExp
+                                in case decurriedExp of
+                                     C.Case _ _ _ _ -> Just $ Module (getOccString b) (map toSignal inputVars) [(mkSignal outputType "out")] [comments]
+                                     otherwise -> Nothing
+                                   
 coreToVerilog (C.Rec _) = undefined
-
-exprToVerilog :: String -> C.Expr Var -> Maybe Module
-
-exprToVerilog m lam@(C.Lam v e) = Just $ Module m (map toSignal vs) [] [comments]
-  where comments = Comment $ showSDocUnsafe $ (vcat $ map (pprType . varType) vs) $$ (text $ show $ toConstr de)
-        (vs, de) = decurry lam
-        pprType :: Type -> SDoc
-        pprType t = case splitTyConApp_maybe t of
-                      Just p@(con, args) -> ppr p <+> (int $ tyConFamilySize con) <+> (int $ typeSize t)
-                      Nothing -> text "NotTyConApp"
-
-
-exprToVerilog _ _ = Nothing
 
 
 decurry :: C.Expr a -> ([a], C.Expr a)
@@ -101,17 +95,20 @@ decurry (C.Lam v e) = (v:vs, dexp)
   where (vs, dexp) = decurry e
 decurry e = ([], e)
 
+mkSignal :: Type -> String -> Signal
+mkSignal t n =case getTypeBits t of
+                  Just r -> if r == 1
+                            then Signal n Nothing
+                            else Signal n $ Just (0, r - 1)
+                  otherwise -> undefined
 
-toSignal :: Var -> Signal
-toSignal v = if l - r == 0
-             then Signal (getOccString $ Var.varName v) Nothing
-             else Signal (getOccString $ Var.varName v) $ Just (l, r)
-  where (l, r) = case splitTyConApp_maybe $ varType v of
-                   Just (tyCon, args) ->
-                     if isAlgTyCon tyCon
-                     then case getOccString $ getName tyCon of
-                       "Word" -> (finiteBitSize (0::Word) - 1, 0)
-                       otherwise -> undefined
-                     else undefined
-                   Nothing -> undefined
+getTypeBits :: Type -> Maybe Int
+getTypeBits t = case splitTyConApp_maybe t of
+                  Just (tyCon, args) ->
+                    if isAlgTyCon tyCon
+                    then case getOccString $ getName tyCon of
+                      "Word" -> Just $ finiteBitSize (0::Word)
+                      otherwise -> Just $ -1
+                    else Just $ -1
+                  Nothing -> Just $ -1
 
