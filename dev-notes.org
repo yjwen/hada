@@ -1,4 +1,4 @@
-* TODO Github Issue #1: Trivial combinational logic [60%]
+* TODO Github Issue #1: Trivial combinational logic [83%]
 
   Let's start from a very primitive Haskell function:
   #+BEGIN_SRC haskell
@@ -56,7 +56,8 @@
 
    It is the binding variable ~v~ in a ~NonRec v e~ that shows the
    naming "abs". ~getOccString~ retrieve the string in ~v~.
-** TODO Get the input output ports for the Verilog module
+** DONE Get the input output ports for the Verilog module
+   CLOSED: [2016-12-13 Tue 18:15]
    
    Functions are represented as curried lambda expressions.
    So for ~abs~, its curried form is:
@@ -141,5 +142,27 @@
    #+END_SRC
 
    Done with module ~Verilog~ (~Verilog.hs~.)
+
+** DONE Data structure for control-data-flow-graph
+   CLOSED: [2016-12-20 Tue 01:10]
+   
+   Mapping a case expression from Core.Expr to Verilog condition
+   constructs is too complicated, considering the complex pattern
+   matching syntax of Haskell is quite different from the syntax of
+   various Verilog's conditional constructs.
+
+   An intermediate data structure is necessary to isolate the mapping
+   from Haskell case expression to conditional representation, and
+   from conditional representation to Verilog conditional constructs.
+
+   Such intermediate data structure is also useful for future optimization
+   and scheduling of tasks.
+
+   Take control-data-flow-graph as a start point.
+
+   Finished a CDFG module to represent module, primary inputs and
+   primary outputs now.
+   
+** TODO Export the case expression
 
    
