@@ -5,7 +5,9 @@ import DynFlags
 import HscTypes
 import Outputable
 
+import CDFG
 import Verilog
+
 
 main :: IO ()
 main = do
@@ -32,6 +34,7 @@ test targetFile =
       p <- parseModule modSum
       t <- typecheckModule p
       d <- desugarModule t
-      let core = mg_binds $ coreModule d
-      return $ showPpr dflags $ filterTheNothing $ map coreToVerilog core
+      let coreBinds = mg_binds $ coreModule d
+          vmodules = map toVModule $ filterTheNothing $ map translateBind coreBinds
+      return $ showSDocUnsafe $ vcat vmodules
   
