@@ -1,4 +1,4 @@
-* TODO Github Issue #1: Trivial combinational logic [83%]
+* TODO Github Issue #1: Trivial combinational logic [71%]
 
   Let's start from a very primitive Haskell function:
   #+BEGIN_SRC haskell
@@ -144,6 +144,7 @@
    Done with module ~Verilog~ (~Verilog.hs~.)
 
 ** DONE Data structure for control-data-flow-graph
+
    CLOSED: [2016-12-20 Tue 01:10]
    
    Mapping a case expression from Core.Expr to Verilog condition
@@ -162,7 +163,18 @@
 
    Finished a CDFG module to represent module, primary inputs and
    primary outputs now.
+
+** TODO Proper representation of graph in Haskell
+   When creating CDFG for case expression, I realized it is not as straightforward
+   as I thought to describe a graph lazily in Haskell, considering CDFG is going
+   to be changed for optimization in future.
+   
    
 ** TODO Export the case expression
+   
+   Add a node to represent the ~case~ logic.
 
+   The CDFG ~case~ logic is at a lower level than Haskell's ~case~
+   expression. While Haskell's ~case~ expression involves constructor-matching,
+   the CDFG ~case~ logic is merely value matching.
    
