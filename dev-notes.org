@@ -1,4 +1,4 @@
-* TODO Github Issue #1: Trivial combinational logic [71%]
+* TODO Github Issue #1: Trivial combinational logic [87%]
 
   Let's start from a very primitive Haskell function:
   #+BEGIN_SRC haskell
@@ -164,12 +164,79 @@
    Finished a CDFG module to represent module, primary inputs and
    primary outputs now.
 
-** TODO Proper representation of graph in Haskell
+** DONE Proper representation of graph in Haskell
+   CLOSED: [2017-01-11 Wed 16:48]
    When creating CDFG for case expression, I realized it is not as straightforward
    as I thought to describe a graph lazily in Haskell, considering CDFG is going
    to be changed for optimization in future.
+
+   A question about graph representation in Haskell has been raised ([[http://stackoverflow.com/questions/9732084/how-do-you-represent-a-graph-in-haskell][here]]).
+   Answers gave the following paper for reference.
+   1. [[http://www.cs.tufts.edu/~nr/pubs/zipcfg.pdf][An Applicative Control-Flow Graph based on Huet's Zipper]]
+   2. [[http://www.cs.tufts.edu/~nr/pubs/hoopl10.pdf][Hoopl: A Modular, Reusable Library for Dataflow Analysis and Transformation]]
+   3. [[http://web.engr.oregonstate.edu/~erwig/papers/InductiveGraphs_JFP01.pdf][Inductive Graphs and Functional Graph Algorithms]]
+
+     
+   Read as a reference first.
+
+   Article 1 and 2 are about control-flow graphs. The control-flow
+   graph models the transfer of control between instructions and
+   instruction sets. The concept of control-flow graph is not
+   suitable for targetting RTL description, which is focusing on
+   data-flows. However, the representation of the control-flow
+   graph can be references of representing data-flow graphs.
+
+   Article 1 is using a mutable representation of graphs, implemented
+   by ML, as mentioned in article 2, which doesn't sounds suitable for
+   Haskell implementation.
+
+   Article 2 doesn't mention its implementation about the control-flow
+   graph. But by its requiring nodes to have a label, it should be
+   using an indirective representation, which maps labels to nodes.
+
+   Article 3 is discussing an abstract inductive representation of
+   graphs, either by the active pattern matching of ML, or mimiced by
+   functions in Haskell. It also discussed several implementation
+   of the underlying representation of graphs, using ML or Haskell.
+   The representation of Haskell is an indirective one, where a node
+   and its context (its predecessors and successos) are saved in
+   a binary search tree.
+
+   So indirective representation of graphs sounds a feasible approach
+   for data-flow graphs. The fundamental problem for indirective
+   representation is how to create a efficient data structure in
+   Haskell that maps from labels to graph elements like nodes and
+   edges.
+
+   There are packages Data.Map and Data.Map.Strict that employ
+   balanced binary search trees, and Data.HashMap and
+   Data.HashMap.Strict that employ hash tables for mapping.
+
+   The binary search trees in Data.Map is based on a paper
+   [[http://groups.csail.mit.edu/mac/users/adams/BB/][Implementing Sets Efficiently in a Functional Language]]. Read the
+   paper to grasp the ideas of sets in functional language.
+
+   Reading done. The implementation is rather a straight one of
+   balanced binary-search tree, a few things specific to functional
+   language, which are:
+   1. Tree balancing is based on sub-tree's node count, rather than
+      depth or black-red marking, because sub-tree's node count
+      doesn't change as frequently as depth or black-red marking in
+      node-rotating, so most of the existing structure can be reused
+      by the new balanced tree.
+   2. Tree union, intersection and difference algorithms are optimized
+      in flavour of functional language's lazy evaluation.
+
+** DONE Revised representation of the data-flow-graph (DFG)
+   CLOSED: [2017-01-14 Sat 23:46]
    
-   
+   Since the edge in control-flow-graph represents the jump of
+   execution between code block, which is not a suitable concept for
+   HDL. So the concept of DFG is used instead of CDFG.
+
+   Choose to label both edges and nodes in the initial version of DFG,
+   since it is the most flexible way.
+      
 ** TODO Export the case expression
    
    Add a node to represent the ~case~ logic.

@@ -1,13 +1,12 @@
-<?xml version="1.0" encoding="utf-8"?>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
-"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
-<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN"
+"http://www.w3.org/TR/html4/strict.dtd">
+<html>
 <head>
-<!-- 2016-12-20 Tue 01:10 -->
-<meta http-equiv="Content-Type" content="text/html;charset=utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
+<!-- 2017-01-14 Sat 23:46 -->
+<meta http-equiv="Content-Type" content="text/html;charset=utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title></title>
-<meta name="generator" content="Org mode" />
+<meta name="generator" content="Org mode">
 <style type="text/css">
  <!--/*--><![CDATA[/*><!--*/
   .title  { text-align: center;
@@ -231,26 +230,28 @@ for the JavaScript code in this tag.
 <h2>Table of Contents</h2>
 <div id="text-table-of-contents">
 <ul>
-<li><a href="#orgc9c728c">1. <span class="todo TODO">TODO</span> Github Issue #1: Trivial combinational logic <code>[83%]</code></a>
+<li><a href="#orga41bb1f">1. <span class="todo TODO">TODO</span> Github Issue #1: Trivial combinational logic <code>[87%]</code></a>
 <ul>
-<li><a href="#orgbf691d8">1.1. <span class="done DONE">DONE</span> Print the desugared bindings of the Haskell source</a></li>
-<li><a href="#org9c86190">1.2. <span class="done DONE">DONE</span> Get Verilog module name from function name</a></li>
-<li><a href="#orgc11c5ab">1.3. <span class="done DONE">DONE</span> Get the input output ports for the Verilog module</a>
+<li><a href="#org4573f73">1.1. <span class="done DONE">DONE</span> Print the desugared bindings of the Haskell source</a></li>
+<li><a href="#orgd53c8b3">1.2. <span class="done DONE">DONE</span> Get Verilog module name from function name</a></li>
+<li><a href="#org5344b30">1.3. <span class="done DONE">DONE</span> Get the input output ports for the Verilog module</a>
 <ul>
-<li><a href="#org46927a2">1.3.1. <span class="done DONE">DONE</span> Determine the bit-width for a binder <code>Word</code></a></li>
-<li><a href="#orgdc667f2">1.3.2. <span class="done DONE">DONE</span> Determine the output type of a binding</a></li>
+<li><a href="#orga818f77">1.3.1. <span class="done DONE">DONE</span> Determine the bit-width for a binder <code>Word</code></a></li>
+<li><a href="#orgb0ccd4a">1.3.2. <span class="done DONE">DONE</span> Determine the output type of a binding</a></li>
 </ul>
 </li>
-<li><a href="#orgc6d9a8a">1.4. <span class="done DONE">DONE</span> Data to represent the verilog netlist</a></li>
-<li><a href="#org083d63d">1.5. <span class="done DONE">DONE</span> Data structure for control-data-flow-graph</a></li>
-<li><a href="#orgb06364f">1.6. <span class="todo TODO">TODO</span> Export the case expression</a></li>
+<li><a href="#orgc90b83f">1.4. <span class="done DONE">DONE</span> Data to represent the verilog netlist</a></li>
+<li><a href="#org77d4131">1.5. <span class="done DONE">DONE</span> Data structure for control-data-flow-graph</a></li>
+<li><a href="#orgf13d14a">1.6. <span class="done DONE">DONE</span> Proper representation of graph in Haskell</a></li>
+<li><a href="#org1f6d6a7">1.7. <span class="done DONE">DONE</span> Revised representation of the data-flow-graph (DFG)</a></li>
+<li><a href="#org70ca4c6">1.8. <span class="todo TODO">TODO</span> Export the case expression</a></li>
 </ul>
 </li>
 </ul>
 </div>
 </div>
-<div id="outline-container-orgc9c728c" class="outline-2">
-<h2 id="orgc9c728c"><span class="section-number-2">1</span> <span class="todo TODO">TODO</span> Github Issue #1: Trivial combinational logic <code>[83%]</code></h2>
+<div id="outline-container-orga41bb1f" class="outline-2">
+<h2 id="orga41bb1f"><span class="section-number-2">1</span> <span class="todo TODO">TODO</span> Github Issue #1: Trivial combinational logic <code>[87%]</code></h2>
 <div class="outline-text-2" id="text-1">
 <p>
 Let's start from a very primitive Haskell function:
@@ -277,8 +278,8 @@ module
 </div>
 </div>
 
-<div id="outline-container-orgbf691d8" class="outline-3">
-<h3 id="orgbf691d8"><span class="section-number-3">1.1</span> <span class="done DONE">DONE</span> Print the desugared bindings of the Haskell source</h3>
+<div id="outline-container-org4573f73" class="outline-3">
+<h3 id="org4573f73"><span class="section-number-3">1.1</span> <span class="done DONE">DONE</span> Print the desugared bindings of the Haskell source</h3>
 <div class="outline-text-3" id="text-1-1">
 <p>
 <code>setSessionDynFlags</code> is necessary if there is no dynamic flag to
@@ -311,8 +312,8 @@ program.
 </ul>
 </div>
 </div>
-<div id="outline-container-org9c86190" class="outline-3">
-<h3 id="org9c86190"><span class="section-number-3">1.2</span> <span class="done DONE">DONE</span> Get Verilog module name from function name</h3>
+<div id="outline-container-orgd53c8b3" class="outline-3">
+<h3 id="orgd53c8b3"><span class="section-number-3">1.2</span> <span class="done DONE">DONE</span> Get Verilog module name from function name</h3>
 <div class="outline-text-3" id="text-1-2">
 <p>
 Get module name <code>abc</code> from the binding of <code>abc</code>.
@@ -340,8 +341,8 @@ naming "abs". <code>getOccString</code> retrieve the string in <code>v</code>.
 </p>
 </div>
 </div>
-<div id="outline-container-orgc11c5ab" class="outline-3">
-<h3 id="orgc11c5ab"><span class="section-number-3">1.3</span> <span class="done DONE">DONE</span> Get the input output ports for the Verilog module</h3>
+<div id="outline-container-org5344b30" class="outline-3">
+<h3 id="org5344b30"><span class="section-number-3">1.3</span> <span class="done DONE">DONE</span> Get the input output ports for the Verilog module</h3>
 <div class="outline-text-3" id="text-1-3">
 <p>
 Functions are represented as curried lambda expressions.
@@ -372,8 +373,8 @@ of the Verilog module inputs are determined by the type information
 of the variables. 
 </p>
 </div>
-<div id="outline-container-org46927a2" class="outline-4">
-<h4 id="org46927a2"><span class="section-number-4">1.3.1</span> <span class="done DONE">DONE</span> Determine the bit-width for a binder <code>Word</code></h4>
+<div id="outline-container-orga818f77" class="outline-4">
+<h4 id="orga818f77"><span class="section-number-4">1.3.1</span> <span class="done DONE">DONE</span> Determine the bit-width for a binder <code>Word</code></h4>
 <div class="outline-text-4" id="text-1-3-1">
 <div class="org-src-container">
 <pre class="src src-haskell"><span style="color: #93E0E3;">varType</span> <span style="color: #DFAF8F;">::</span> <span style="color: #7CB8BB;">Var</span> <span style="color: #DFAF8F;">-&gt;</span> <span style="color: #7CB8BB;">Kind</span>
@@ -384,7 +385,7 @@ retrieve the type of the binder (<code>Kind</code> is a synonym of <code>Type</c
 </p>
 
 <div class="org-src-container">
-<pre class="src src-haskell"><span style="color: #93E0E3;">splitTyConApp_maybe</span> <span style="color: #DFAF8F;">::</span> <span style="color: #7CB8BB;">Type</span> <span style="color: #DFAF8F;">-&gt;</span> <span style="color: #7CB8BB;">Maybe</span> (<span style="color: #7CB8BB;">TyCon</span>, [<span style="color: #7CB8BB;">Type</span>])
+<pre class="src src-haskell"><span style="color: #93E0E3;">splitTyConApp_maybe</span> <span style="color: #DFAF8F;">::</span> <span style="color: #7CB8BB;">Type</span> <span style="color: #DFAF8F;">-&gt;</span> <span style="color: #7CB8BB;">Maybe</span> (<span style="color: #7CB8BB;">TyCon</span><span style="color: #DFAF8F;">,</span> [<span style="color: #7CB8BB;">Type</span>])
 </pre>
 </div>
 <p>
@@ -414,8 +415,8 @@ the bit width is <code>finiteBitSize (0::Word)</code>.
 </div>
 
 
-<div id="outline-container-orgdc667f2" class="outline-4">
-<h4 id="orgdc667f2"><span class="section-number-4">1.3.2</span> <span class="done DONE">DONE</span> Determine the output type of a binding</h4>
+<div id="outline-container-orgb0ccd4a" class="outline-4">
+<h4 id="orgb0ccd4a"><span class="section-number-4">1.3.2</span> <span class="done DONE">DONE</span> Determine the output type of a binding</h4>
 <div class="outline-text-4" id="text-1-3-2">
 <p>
 The type of the bound variable <code>v</code> in <code>NonRec v e</code> should be <code>Word
@@ -437,7 +438,7 @@ of kind <code>*</code> and return the input type list and the return type.
 There is:
 </p>
 <div class="org-src-container">
-<pre class="src src-haskell"><span style="color: #93E0E3;">splitFunTys</span> <span style="color: #DFAF8F;">::</span> <span style="color: #7CB8BB;">Type</span> <span style="color: #DFAF8F;">-&gt;</span> ([<span style="color: #7CB8BB;">Type</span>], <span style="color: #7CB8BB;">Type</span>)
+<pre class="src src-haskell"><span style="color: #93E0E3;">splitFunTys</span> <span style="color: #DFAF8F;">::</span> <span style="color: #7CB8BB;">Type</span> <span style="color: #DFAF8F;">-&gt;</span> ([<span style="color: #7CB8BB;">Type</span>]<span style="color: #DFAF8F;">,</span> <span style="color: #7CB8BB;">Type</span>)
 </pre>
 </div>
 <p>
@@ -447,8 +448,8 @@ doing such de-currying.
 </div>
 </div>
 
-<div id="outline-container-orgc6d9a8a" class="outline-3">
-<h3 id="orgc6d9a8a"><span class="section-number-3">1.4</span> <span class="done DONE">DONE</span> Data to represent the verilog netlist</h3>
+<div id="outline-container-orgc90b83f" class="outline-3">
+<h3 id="orgc90b83f"><span class="section-number-3">1.4</span> <span class="done DONE">DONE</span> Data to represent the verilog netlist</h3>
 <div class="outline-text-3" id="text-1-4">
 <p>
 To design data types to represent a verilog module. The data
@@ -476,8 +477,8 @@ Done with module <code>Verilog</code> (<code>Verilog.hs</code>.)
 </div>
 </div>
 
-<div id="outline-container-org083d63d" class="outline-3">
-<h3 id="org083d63d"><span class="section-number-3">1.5</span> <span class="done DONE">DONE</span> Data structure for control-data-flow-graph</h3>
+<div id="outline-container-org77d4131" class="outline-3">
+<h3 id="org77d4131"><span class="section-number-3">1.5</span> <span class="done DONE">DONE</span> Data structure for control-data-flow-graph</h3>
 <div class="outline-text-3" id="text-1-5">
 <p>
 Mapping a case expression from Core.Expr to Verilog condition
@@ -508,13 +509,132 @@ primary outputs now.
 </div>
 </div>
 
-<div id="outline-container-orgb06364f" class="outline-3">
-<h3 id="orgb06364f"><span class="section-number-3">1.6</span> <span class="todo TODO">TODO</span> Export the case expression</h3>
+<div id="outline-container-orgf13d14a" class="outline-3">
+<h3 id="orgf13d14a"><span class="section-number-3">1.6</span> <span class="done DONE">DONE</span> Proper representation of graph in Haskell</h3>
+<div class="outline-text-3" id="text-1-6">
+<p>
+When creating CDFG for case expression, I realized it is not as straightforward
+as I thought to describe a graph lazily in Haskell, considering CDFG is going
+to be changed for optimization in future.
+</p>
+
+<p>
+A question about graph representation in Haskell has been raised (<a href="http://stackoverflow.com/questions/9732084/how-do-you-represent-a-graph-in-haskell">here</a>).
+Answers gave the following paper for reference.
+</p>
+<ol class="org-ol">
+<li><a href="http://www.cs.tufts.edu/~nr/pubs/zipcfg.pdf">An Applicative Control-Flow Graph based on Huet's Zipper</a></li>
+<li><a href="http://www.cs.tufts.edu/~nr/pubs/hoopl10.pdf">Hoopl: A Modular, Reusable Library for Dataflow Analysis and Transformation</a></li>
+<li><a href="http://web.engr.oregonstate.edu/~erwig/papers/InductiveGraphs_JFP01.pdf">Inductive Graphs and Functional Graph Algorithms</a></li>
+</ol>
+
+
+<p>
+Read as a reference first.
+</p>
+
+<p>
+Article 1 and 2 are about control-flow graphs. The control-flow
+graph models the transfer of control between instructions and
+instruction sets. The concept of control-flow graph is not
+suitable for targetting RTL description, which is focusing on
+data-flows. However, the representation of the control-flow
+graph can be references of representing data-flow graphs.
+</p>
+
+<p>
+Article 1 is using a mutable representation of graphs, implemented
+by ML, as mentioned in article 2, which doesn't sounds suitable for
+Haskell implementation.
+</p>
+
+<p>
+Article 2 doesn't mention its implementation about the control-flow
+graph. But by its requiring nodes to have a label, it should be
+using an indirective representation, which maps labels to nodes.
+</p>
+
+<p>
+Article 3 is discussing an abstract inductive representation of
+graphs, either by the active pattern matching of ML, or mimiced by
+functions in Haskell. It also discussed several implementation
+of the underlying representation of graphs, using ML or Haskell.
+The representation of Haskell is an indirective one, where a node
+and its context (its predecessors and successos) are saved in
+a binary search tree.
+</p>
+
+<p>
+So indirective representation of graphs sounds a feasible approach
+for data-flow graphs. The fundamental problem for indirective
+representation is how to create a efficient data structure in
+Haskell that maps from labels to graph elements like nodes and
+edges.
+</p>
+
+<p>
+There are packages Data.Map and Data.Map.Strict that employ
+balanced binary search trees, and Data.HashMap and
+Data.HashMap.Strict that employ hash tables for mapping.
+</p>
+
+<p>
+The binary search trees in Data.Map is based on a paper
+<a href="http://groups.csail.mit.edu/mac/users/adams/BB/">Implementing Sets Efficiently in a Functional Language</a>. Read the
+paper to grasp the ideas of sets in functional language.
+</p>
+
+<p>
+Reading done. The implementation is rather a straight one of
+balanced binary-search tree, a few things specific to functional
+language, which are:
+</p>
+<ol class="org-ol">
+<li>Tree balancing is based on sub-tree's node count, rather than
+depth or black-red marking, because sub-tree's node count
+doesn't change as frequently as depth or black-red marking in
+node-rotating, so most of the existing structure can be reused
+by the new balanced tree.</li>
+<li>Tree union, intersection and difference algorithms are optimized
+in flavour of functional language's lazy evaluation.</li>
+</ol>
+</div>
+</div>
+
+<div id="outline-container-org1f6d6a7" class="outline-3">
+<h3 id="org1f6d6a7"><span class="section-number-3">1.7</span> <span class="done DONE">DONE</span> Revised representation of the data-flow-graph (DFG)</h3>
+<div class="outline-text-3" id="text-1-7">
+<p>
+Since the edge in control-flow-graph represents the jump of
+execution between code block, which is not a suitable concept for
+HDL. So the concept of DFG is used instead of CDFG.
+</p>
+
+<p>
+Choose to label both edges and nodes in the initial version of DFG,
+since it is the most flexible way.
+</p>
+</div>
+</div>
+
+<div id="outline-container-org70ca4c6" class="outline-3">
+<h3 id="org70ca4c6"><span class="section-number-3">1.8</span> <span class="todo TODO">TODO</span> Export the case expression</h3>
+<div class="outline-text-3" id="text-1-8">
+<p>
+Add a node to represent the <code>case</code> logic.
+</p>
+
+<p>
+The CDFG <code>case</code> logic is at a lower level than Haskell's <code>case</code>
+expression. While Haskell's <code>case</code> expression involves constructor-matching,
+the CDFG <code>case</code> logic is merely value matching.
+</p>
+</div>
 </div>
 </div>
 </div>
 <div id="postamble" class="status">
-<p class="date">Created: 2016-12-20 Tue 01:10</p>
+<p class="date">Created: 2017-01-14 Sat 23:46</p>
 <p class="validation"><a href="http://validator.w3.org/check?uri=referer">Validate</a></p>
 </div>
 </body>
