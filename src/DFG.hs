@@ -1,5 +1,6 @@
-module CDFG where
+module DFG where
 
+import qualified Data.Map.Strict as Map
 import qualified CoreSyn as C
 import Var
 import Name
@@ -9,30 +10,43 @@ import DataCon
 import Data.Data
 import Data.Bits
 
+newtype NodeLabel = Int
+newtype SignalLabel = Int
+
 data Graph = Graph { graphName :: String
-                   , graphInputs :: [Signal]
-                   , graphOutputs :: [Signal]
+                   , graphSignals :: Map.Map SignalLabel Signal
+                   , graphNodes :: Map.Map NodeLabel Node
+                   , graphSignalNames :: Map.Map Signal SignalLabel
                    }
             deriving (Show)
 
-data Signal = Signal { signalName :: Maybe String
+data Signal = Signal { signalID :: Either String Int
+                     -- ^ String for a named signal, Int for an
+                     -- anonymous one.
                      , signalWidth :: Maybe Int
-                     , signalPins :: [Pin]
+                     , signalDriver :: NodeLabel
+                     , signalSinks :: [NodeLabel]
                      }
-              deriving (Show)
+            deriving (Show)
 
-data PinDirection = Input | Output deriving (Show)
+instance Eq Signal where
+  a == b = (signalID a == signalID b) && (signalWidth a == signalWidth b)
 
-data Pin = Pin { pinName :: String
-               , pinDirection :: PinDirection
-               , pinSignal :: Signal
-               , pinSignalSlicing :: Maybe (Int, Int)
-               , pinNode :: Node
-               }
-           deriving (Show)
+instance Ord Signal where
+  compare a b = case compare (signalID a) (signalID b) of
+                  LT -> LT
+                  GT -> GT
+                  EQ -> compare (signalWidth a) (signalWidth b)
 
-data Node = Node deriving (Show)
+data Node = CaseNode { caseOutput :: SignalLabel
+                     , caseCond :: SignalLabel
+                     , caseBranches :: [(Int, SignalLabel)]
+                     }
+          deriving (Show)
 
+-- | @initGraph s@ creates a graph named @s@ with no node or signal.
+initGraph :: String -> Graph 
+initGraph inputs output = Graph s Map.empty Map.empty Map.empty
 
 translateBind :: C.CoreBind -> Maybe Graph
 translateBind (C.NonRec b e) =
@@ -56,7 +70,7 @@ mkSignal t n = case getTypeBits t of
                  Just r -> if r == 1
                            then Signal (Just n) Nothing []
                            else Signal (Just n) (Just r) []
-                 otherwise -> error "Unknow type for getTypeBits"
+                 otherwise -> error "Unknown type for getTypeBits"
 
 
 getTypeBits :: Type -> Maybe Int
