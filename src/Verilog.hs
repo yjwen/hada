@@ -1,7 +1,9 @@
 module Verilog where
 
-import CDFG
+import DFG
 import Outputable
+import qualified Data.Map.Strict as Map
+import qualified Data.Set as Set
 
 -- | `delim d s` appends the delimeter `d` to each element of `s`
 -- except the last one.
@@ -14,7 +16,7 @@ toVModule :: Graph -> SDoc
 toVModule g = text "module" <+> text (graphName g) <+> ports <> semi $$ (text "endmodule")
     where ports = parens $ vcat $ delim comma (inputs ++ outputs)
           inputs = map (declareSignal "input") $ graphInputs g
-          outputs = map (declareSignal "output") $ graphOutputs g
+          outputs = map (declareSignal "output") $ Set.toList $ graphOutputs g
 
 declareSignal :: String -> Signal -> SDoc
 declareSignal head s =
@@ -24,9 +26,9 @@ declareSignal head s =
     Just w -> brackets ((int $ w -1) <+> colon <+> (int 0))
     Nothing -> empty
   <+>
-  case signalName s of
-    Just n -> text n
-    Nothing -> error "Unnamed signal"
+  case signalID s of
+    Left n -> text n
+    Right _ -> error "Unnamed signal"
                                    
 
 -- toStatements :: C.Expr Var -> Maybe [Statement]

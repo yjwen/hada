@@ -21,13 +21,13 @@ Executable hada
   Main-is: main.hs
   Hs-source-dirs: src
   Default-language: Haskell2010
-  Build-depends: base >= 4.9, ghc >= 8.0.1, ghc-paths
+  Build-depends: base >= 4.9, ghc >= 8.0.1, ghc-paths, containers
         
 Library
   Exposed-modules:     Data.FixedWidth, Verilog
   -- other-modules:       
   Other-extensions:    TemplateHaskell
-  Build-depends:       base >=4.9, template-haskell >=2.11, ghc >= 8.0.1
+  Build-depends:       base >=4.9, template-haskell >=2.11, ghc >= 8.0.1, containers
   Hs-source-dirs:      src
   Default-language:    Haskell2010
 

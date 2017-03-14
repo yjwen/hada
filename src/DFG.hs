@@ -1,6 +1,7 @@
 module DFG where
 
 import qualified Data.Map.Strict as Map
+import qualified Data.Set as Set
 import qualified CoreSyn as C
 import Var
 import Name
@@ -10,13 +11,12 @@ import DataCon
 import Data.Data
 import Data.Bits
 
-newtype NodeLabel = Int
-newtype SignalLabel = Int
+type NodeLabel = Int
 
 data Graph = Graph { graphName :: String
-                   , graphSignals :: Map.Map SignalLabel Signal
+                   , graphSignals :: Map.Map Signal (Maybe NodeLabel, [NodeLabel])
                    , graphNodes :: Map.Map NodeLabel Node
-                   , graphSignalNames :: Map.Map Signal SignalLabel
+                   , graphOutputs :: Set.Set Signal
                    }
             deriving (Show)
 
@@ -24,8 +24,6 @@ data Signal = Signal { signalID :: Either String Int
                      -- ^ String for a named signal, Int for an
                      -- anonymous one.
                      , signalWidth :: Maybe Int
-                     , signalDriver :: NodeLabel
-                     , signalSinks :: [NodeLabel]
                      }
             deriving (Show)
 
@@ -38,15 +36,35 @@ instance Ord Signal where
                   GT -> GT
                   EQ -> compare (signalWidth a) (signalWidth b)
 
-data Node = CaseNode { caseOutput :: SignalLabel
-                     , caseCond :: SignalLabel
-                     , caseBranches :: [(Int, SignalLabel)]
+data Node = CaseNode { caseOutput :: Maybe Signal
+                     , caseCond :: Maybe Signal
+                     , caseBranches :: [(Int, Maybe Signal)]
                      }
           deriving (Show)
 
--- | @initGraph s@ creates a graph named @s@ with no node or signal.
-initGraph :: String -> Graph 
-initGraph inputs output = Graph s Map.empty Map.empty Map.empty
+-- | @emptyGraph s@ creates a graph named @s@ with no node or signal.
+emptyGraph :: String -> Graph 
+emptyGraph s = Graph s Map.empty Map.empty Set.empty
+
+insertSignal :: Signal -> Graph -> Graph
+insertSignal s g = Graph
+                   (graphName g)
+                   (Map.insertWith (\ _ n -> n) s (Nothing, []) (graphSignals g))
+                   (graphNodes g)
+                   (graphOutputs g)
+insertOutputSignal :: Signal -> Graph -> Graph
+insertOutputSignal s g = Graph
+                         (graphName g)
+                         (Map.insertWith (\ _ n -> n) s (Nothing, []) (graphSignals g))
+                         (graphNodes g)
+                         (Set.insert s $ graphOutputs g)
+
+
+graphInputs :: Graph -> [Signal]
+graphInputs g = let f s (i, _) is = case i of -- Check signal driver.
+                                 Nothing -> s:is -- No driver, signal is an input.
+                                 _ -> is         -- Not an input.
+                in Map.foldrWithKey f [] $ graphSignals g
 
 translateBind :: C.CoreBind -> Maybe Graph
 translateBind (C.NonRec b e) =
@@ -54,9 +72,12 @@ translateBind (C.NonRec b e) =
       (inputVars, decurriedExp) = decurry e
       toSignal v = mkSignal (Var.varType v) (getOccString $ Var.varName v)
       moduleName = getOccString b
+      -- (g, n) = insertExp (emptyGraph moduleName) decurriedExp
+      g' = insertOutputSignal (mkSignal outputType "out") (emptyGraph moduleName)
+      -- (g'', _) = connect g' n s
   in case head moduleName of
     '$' -> Nothing
-    otherwise -> Just $ Graph moduleName (map toSignal inputVars) [(mkSignal outputType "out")]
+    otherwise -> Just g'
 
 translateBind (C.Rec _) = error "Cannot translate C.Rec"
 
@@ -68,8 +89,8 @@ decurry e = ([], e)
 mkSignal :: Type -> String -> Signal
 mkSignal t n = case getTypeBits t of
                  Just r -> if r == 1
-                           then Signal (Just n) Nothing []
-                           else Signal (Just n) (Just r) []
+                           then Signal (Left n) Nothing
+                           else Signal (Left n) (Just r)
                  otherwise -> error "Unknown type for getTypeBits"
 
 

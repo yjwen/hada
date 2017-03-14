@@ -5,7 +5,7 @@ import DynFlags
 import HscTypes
 import Outputable
 
-import CDFG
+import DFG
 import Verilog
 
 
