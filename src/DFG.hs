@@ -3,6 +3,7 @@ module DFG where
 import qualified Data.Map.Strict as Map
 import qualified Data.Set as Set
 import qualified CoreSyn as C
+import Control.Monad.Trans.State
 import Var
 import Name
 import Type
@@ -10,6 +11,7 @@ import TyCon
 import DataCon
 import Data.Data
 import Data.Bits
+import Outputable
 
 type NodeLabel = Int
 
@@ -36,9 +38,9 @@ instance Ord Signal where
                   GT -> GT
                   EQ -> compare (signalWidth a) (signalWidth b)
 
-data Node = CaseNode { caseOutput :: Maybe Signal
-                     , caseCond :: Maybe Signal
-                     , caseBranches :: [(Int, Maybe Signal)]
+data Node = CaseNode { caseOutput :: Signal
+                     , caseCond :: Signal
+                     , caseBranches :: [(Int, Signal)]
                      }
           deriving (Show)
 
@@ -46,19 +48,22 @@ data Node = CaseNode { caseOutput :: Maybe Signal
 emptyGraph :: String -> Graph 
 emptyGraph s = Graph s Map.empty Map.empty Set.empty
 
-insertSignal :: Signal -> Graph -> Graph
-insertSignal s g = Graph
-                   (graphName g)
-                   (Map.insertWith (\ _ n -> n) s (Nothing, []) (graphSignals g))
-                   (graphNodes g)
-                   (graphOutputs g)
-insertOutputSignal :: Signal -> Graph -> Graph
-insertOutputSignal s g = Graph
-                         (graphName g)
-                         (Map.insertWith (\ _ n -> n) s (Nothing, []) (graphSignals g))
-                         (graphNodes g)
-                         (Set.insert s $ graphOutputs g)
+type GraphS = State Graph
+insertSignal :: Signal -> GraphS ()
+insertSignal s = do g <- get
+                    put $ Graph
+                            (graphName g)
+                            (Map.insertWith (\ _ n -> n) s (Nothing, []) (graphSignals g))
+                            (graphNodes g)
+                            (graphOutputs g)
 
+insertOutputSignal :: Signal -> GraphS ()
+insertOutputSignal s = do g <- get
+                          put $ Graph
+                                  (graphName g)
+                                  (Map.insertWith (\ _ n -> n) s (Nothing, []) (graphSignals g))
+                                  (graphNodes g)
+                                  (Set.insert s $ graphOutputs g)
 
 graphInputs :: Graph -> [Signal]
 graphInputs g = let f s (i, _) is = case i of -- Check signal driver.
@@ -72,12 +77,11 @@ translateBind (C.NonRec b e) =
       (inputVars, decurriedExp) = decurry e
       toSignal v = mkSignal (Var.varType v) (getOccString $ Var.varName v)
       moduleName = getOccString b
-      -- (g, n) = insertExp (emptyGraph moduleName) decurriedExp
-      g' = insertOutputSignal (mkSignal outputType "out") (emptyGraph moduleName)
-      -- (g'', _) = connect g' n s
+      out = mkSignal outputType "out"
+      (_, g) = runState (insertOutputSignal out) $ emptyGraph moduleName
   in case head moduleName of
     '$' -> Nothing
-    otherwise -> Just g'
+    otherwise -> Just g
 
 translateBind (C.Rec _) = error "Cannot translate C.Rec"
 
