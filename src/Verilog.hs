@@ -19,15 +19,15 @@ toVModule g = text "module" <+> text (graphName g) <+> ports <> semi $$ vcat sta
     where ports = parens $ vcat $ delim comma (inputs ++ outputs)
           inputs = map (declareSignal "input") $ graphInputs g
           outputs = map (declareSignal "output") $ Set.toList $ graphOutputs g
-          statements = map nodeStatement $ Map.elems $ graphNodes g
+          statements = Set.foldr (\signal statements -> (signalStatement signal g:statements)) [] $ graphOutputs g
 
 declareSignal :: String -> Signal -> SDoc
 declareSignal head s =
   text head
   <+>
   case signalWidth s of
-    Just w -> brackets ((int $ w -1) <+> colon <+> (int 0))
-    Nothing -> empty
+    1 -> empty
+    w -> brackets ((int $ w -1) <+> colon <+> (int 0))
   <+>
   case signalID s of
     Left n -> text n
@@ -38,18 +38,39 @@ signalReference s = text $ case signalID s of
                              Left s -> s
                              Right id -> "anonymous_" ++ show id
 
-nodeStatement :: Node -> SDoc
-nodeStatement (CaseNode o cond dflt branches) =
-    if length branches == 1
-    then let (trueValue, trueSignal) = head branches
-         in text "assign" <+> signalReference o <+> text "=" <+> 
-                (parens $ signalReference cond <+> text "==" <+> bitLiteral trueValue (length branches))
-                <+> text "?"
-                <+> signalReference trueSignal
-                <+> text ":"
-                <+> signalReference dflt
-                <> semi
-    else error "Unsupported conditional node."
+signalStatement :: Signal -> Graph -> SDoc
+signalStatement s g =
+    case signalSource s g of
+      Just (_, n) -> case n of
+                       CaseNode o cond dflt branches ->
+                           if length branches == 1
+                           then text "assign" <+> signalReference o <+> text "=" <+> signalExpression s g <> semi
+                           else error "Unsupported conditional signal."
+                       _ -> error "Unsupported source node."
+      _ -> error "Failed to get signal source node."
+
+signalExpression :: Signal -> Graph -> SDoc
+signalExpression s g =
+    case signalSource s g of
+      Just (nl, n) -> case n of
+                        CaseNode o cond dflt branches ->
+                            if length branches == 1
+                            then let (trueValue, trueSignal) = head branches
+                                     c = parens $
+                                         if trueValue == 1
+                                         then signalExpression cond g
+                                         else signalExpression cond g <+> text "==" <+> bitLiteral trueValue 1
+                                     t = signalExpression trueSignal g
+                                     f = signalExpression dflt g
+                                 in c <+> text "?" <+> t <+> text ":" <+> f
+                            else error "Unsupported case node format."
+                        BinNode o op lhs rhs ->
+                            signalReference lhs <+> binOpText op <+> signalReference rhs
+                                where binOpText LessThan = text "<"
+                                      binOpText GreaterThan = text ">"
+                                      binOpText Minus = text "-"
+                                      binOpText Plus = text "+"
+      _ -> error "Signal has no driver."
 
 bitLiteral :: Integer -> Int -> SDoc
 bitLiteral value width = int width <> text "'b" <>

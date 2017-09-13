@@ -21,7 +21,7 @@ Executable hada
   Main-is: main.hs
   Hs-source-dirs: src
   Default-language: Haskell2010
-  Build-depends: base >= 4.9, ghc >= 8.0.1, ghc-paths, containers, transformers
+  Build-depends: base >= 4.9, ghc >= 8.0.1, ghc-paths, containers, transformers, parsec
         
 Library
   Exposed-modules:     Data.FixedWidth, Verilog
