@@ -1,0 +1,20 @@
+#+TITLE: hada: Experimental Haskell-to-HDL Compiler
+
+* Example 1: Trivial Combinational Logic
+  #+BEGIN_SRC haskell
+    module Abs where
+
+    abs :: Word -> Word -> Word
+    abs a b | a < b = b - a
+            | otherwise = a - b
+  #+END_SRC
+  is translated to
+  #+BEGIN_SRC verilog
+    module abs (input [63 : 0] a,
+                input [63 : 0] b,
+                output [63 : 0] out);
+    assign out = (a < b) ? b - a : a - b;
+    endmodule
+  #+END_SRC
+  
+  
