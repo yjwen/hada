@@ -14,7 +14,6 @@ import Text.ParserCombinators.Parsec
 
 import Data.Maybe (isJust, catMaybes)
 import Data.List (intercalate)    
-
 data Args = Args
     { dumpCore :: Bool
     , targetFile :: String
@@ -36,12 +35,9 @@ main = do
     Right args -> do result <- test args
                      putStrLn result
 
-
-filterTheNothing :: [Maybe a] -> [a]
-filterTheNothing [] = []
-filterTheNothing (x:xs) = case x of
-                            Just a -> a:filterTheNothing xs
-                            Nothing -> filterTheNothing xs
+prettyExcept :: Outputable a => (a -> SDoc) -> Either String a -> SDoc
+prettyExcept _ (Left msg) = text $ "Error: " ++ msg
+prettyExcept f (Right a) = f a
 
 test :: Args -> IO String
 test args =
@@ -52,14 +48,17 @@ test args =
       target <- guessTarget (targetFile args) Nothing
       setTargets [target]
       load LoadAllTargets
-      modSum <- getModSummary $ mkModuleName "Abs"
-      p <- parseModule modSum
+           -- modSum <- getModSummary $ mkModuleName "Abs"
+      modSums <- getModuleGraph
+      p <- parseModule $ head modSums
       t <- typecheckModule p
       d <- desugarModule t
       let coreBinds = mg_binds $ coreModule d
-          graphs = catMaybes $ map translateBind coreBinds
-          dumped = map ppr graphs
-          vmodules = map toVModule graphs
+          graphs = map translateBind coreBinds
+          dumped = if dumpCore args
+                   then (map ppr coreBinds) ++ (map (prettyExcept ppr) graphs)
+                   else []
+          vmodules = map (prettyExcept toVModule) graphs
       -- return $ showSDocUnsafe $ vcat $ (map ppr coreBinds) ++ dumped
-      return $ showSDocUnsafe $ vcat $  (if dumpCore args then (map ppr coreBinds) ++ dumped else []) ++ vmodules
+      return $ showSDocUnsafe $ vcat $ dumped ++ vmodules
   

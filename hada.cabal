@@ -19,13 +19,14 @@ Cabal-version:       >=1.10
 
 Executable hada
   Main-is: main.hs
+  other-modules:       DFG, DFGSyn, PprDFG, Verilog
   Hs-source-dirs: src
   Default-language: Haskell2010
-  Build-depends: base >= 4.9, ghc >= 8.0.1, ghc-paths, containers, transformers, parsec
+  Build-depends: base >= 4.9, ghc >= 8.0.1, ghc-paths, containers, transformers, parsec, mtl
         
 Library
   Exposed-modules:     Data.FixedWidth, Verilog
-  -- other-modules:       
+
   Other-extensions:    TemplateHaskell
   Build-depends:       base >=4.9, template-haskell >=2.11, ghc >= 8.0.1, containers
   Hs-source-dirs:      src

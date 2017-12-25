@@ -78,15 +78,15 @@ insertNode n = do g <- get
                           (Map.insert nl n $ graphNodes g)
                           (graphOutputs g)
 
+autoSignal :: Maybe Signal -> Int -> GraphS Signal
+autoSignal (Just s) _ = return s
+autoSignal Nothing w = newSignal w
+
 newSignal :: Int -> GraphS Signal
 newSignal w = do g <- get
                  let s = Signal (Right $ Map.size $ graphSignals g) w
                  insertSignal s
                  return s
-
-autoSignal :: Maybe Signal -> Int -> GraphS Signal
-autoSignal (Just s) _ = return s
-autoSignal Nothing w = newSignal w
 
 addOutput :: NodeLabel -> Signal -> SignalMap -> SignalMap
 addOutput nl s smap = let (input, outputs) = smap Map.! s
