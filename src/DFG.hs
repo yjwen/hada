@@ -7,7 +7,6 @@ import Unique
 
 import Data.Data
 
-
 type NodeLabel = Int
 type SignalMap = Map.Map Signal (Maybe NodeLabel, [NodeLabel])
 data Graph = Graph { graphName :: String
@@ -121,5 +120,4 @@ graphInputs g = let f s (i, _) is = case i of -- Check signal driver.
                                  Nothing -> s:is -- No driver, signal is an input.
                                  _ -> is         -- Not an input.
                 in Map.foldrWithKey f [] $ graphSignals g
-
 
