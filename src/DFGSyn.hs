@@ -63,8 +63,9 @@ expr s l (C.Lam v e) =
     else error $ "Unsupported lambda expression."
 
 expr s l (C.Let bind exp) =
-                case translateBind' l bind of
-                  Right graph -> expr s (LM.insert (graphName graph) graph l) exp
+                case localBind l bind of
+                  Right (Just graph) -> expr s (LM.insert (graphName graph) graph l) exp
+                  Right Nothing -> expr s l exp
                   Left err -> error $ "Failed at translating local bind " ++ (showppr bind) ++ ". Error: " ++ err
 expr _ _ e = error $ "Unsupported Node type: " ++ showppr e
 
@@ -82,13 +83,11 @@ specialize typ args
       in (substTy tvsubs typ', vargs)
 
 remove_predicates :: Type -> [C.CoreExpr] -> (Type, [C.CoreExpr])
-remove_predicates typ args
-    | Just (appTyp, argType) <- Type.splitAppTy_maybe typ
-    , Just (tycon, typs) <- Type.splitTyConApp_maybe appTyp
-    , all isPredTy typs
-    = (argType, drop (length typs) args) -- No type check. Simply drop those type-checking globals.
+remove_predicates typ (arg:args)
+  | Just (t, f) <- Type.splitFunTy_maybe typ
+  , Type.isPredTy t
+  = remove_predicates f args
 remove_predicates typ args = (typ, args)
-
 
 varApp :: Maybe Signal -> LocalGraphs -> Var -> [C.CoreExpr] ->  GraphSE Signal
 varApp s l v args
@@ -102,7 +101,13 @@ varApp s l v args
          o <- lift $ autoSignal s bit
          lift $ insertNode $ BinNode o op lsig rsig
          return o
-varApp _ _ v args = throwError $ "Unsupported varApp " ++ showppr v ++ " " ++ showppr args
+varApp s l v args
+  | (t, args') <- specialize (Var.varType v) args
+  , Just (l, r) <- Type.splitFunTy_maybe t
+  = throwError $ "DEBUG: l=" ++ showppr l ++ ", ispred=" ++ (show $ Type.isPredTy l) ++ ", r=" ++ showppr r ++ ", ispred=" ++ (show $ Type.isPredTy r) ++ (showppr $ remove_predicates t args')
+
+varApp _ _ v args = throwError $ "Unsupported varApp " ++ showppr v ++ " " ++ showppr args ++ " " ++ showppr t ++ " " ++ showppr (Type.splitFunTy_maybe t)
+  where (t, _) = specialize (Var.varType v) args
 
 binOp :: Var -> Maybe BinOp
 binOp var = case getOccString $ Var.varName var of
@@ -125,25 +130,26 @@ alts l ((altCon, vars, exp):as) =
          C.DataAlt dc -> let tag = dataConTag dc
                          in return (dflt, (toInteger $ tag - 1, sig):branches)
 
-translateBind = translateBind' LM.empty
+bind :: C.CoreBind -> Either String (Maybe Graph)
+bind (C.NonRec b e)
+  |  "$trModule" <- getOccString b -- The module bind, ignore for now.
+  = Right Nothing
+bind b = localBind LM.empty b
 
-translateBind' :: LocalGraphs -> C.CoreBind -> Either String Graph
-translateBind' l (C.NonRec b e) =
+localBind :: LocalGraphs -> C.CoreBind -> Either String (Maybe Graph)
+localBind l (C.NonRec b e) =
   let (_, outputType) = splitFunTys $ varType b
       (decurriedExpr, inputVars) = decurry e []
       moduleName = getOccString b
-      (ret, g) = runState (runExceptT syn) $ emptyGraph moduleName
       syn = do out <- ExceptT $ return $ mkSignal outputType "out"
                lift $ insertOutputSignal out
                expr (Just out) l decurriedExpr
-  in case head moduleName of
-    '$' -> Left "$ module"
-    otherwise -> case ret of
-                   Right _ -> Right g
-                   Left err -> Left err
-                   
+      (ret, g) = runState (runExceptT syn) $ emptyGraph moduleName
+  in case ret of
+    Right _ -> Right (Just g)
+    Left err -> Left err
 
-translateBind' _ (C.Rec _) = Left "Cannot translate C.Rec"
+localBind _ (C.Rec _) = Left "Cannot translate C.Rec"
 
 decurry :: C.CoreExpr -> [Var] -> (C.CoreExpr, [Var])
 decurry (C.Lam v e) as = (dexp, v:vs)

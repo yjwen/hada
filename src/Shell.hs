@@ -16,9 +16,10 @@ data Args = Args
     , targetFile :: String
     }
 
-prettyExcept :: Outputable a => (a -> SDoc) -> Either String a -> SDoc
+prettyExcept :: Outputable a => (a -> SDoc) -> Either String (Maybe a) -> SDoc
 prettyExcept _ (Left msg) = text $ "Error: " ++ msg
-prettyExcept f (Right a) = f a
+prettyExcept _ (Right Nothing) = empty
+prettyExcept f (Right (Just a)) = f a
 
 synToVerilog :: Args -> IO String
 synToVerilog args =
@@ -35,10 +36,10 @@ synToVerilog args =
       t <- typecheckModule p
       d <- desugarModule t
       let coreBinds = mg_binds $ coreModule d
-          graphs = map translateBind coreBinds
+          graphs = map bind coreBinds
           dumped = if dumpCore args
                    then (map ppr coreBinds) ++ (map (prettyExcept ppr) graphs)
                    else []
           vmodules = map (prettyExcept toVModule) graphs
       -- return $ showSDocUnsafe $ vcat $ (map ppr coreBinds) ++ dumped
-      return $ showSDocUnsafe $ vcat $ dumped ++ vmodules
+      return $ showSDocUnsafe $ vcat $ dumped ++ vmodules ++ [text ""]
