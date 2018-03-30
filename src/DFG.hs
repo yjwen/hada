@@ -15,22 +15,23 @@ data Graph = Graph { graphName :: String
                    , graphOutputs :: Set.Set Signal
                    }
             deriving (Show)
+data SignalType = SimpleSigType Int
+                | AlgebraicType { algSigName :: [String]  -- Can be hierarchical
+                                , algSigType :: Int
+                                , algSigData :: Int
+                                }
+                deriving (Show, Eq, Ord)
+
+typeWidth :: SignalType -> Int
+typeWidth (SimpleSigType w) = w
+typeWidth (AlgebraicType _ t d) = t + d
 
 data Signal = Signal { signalID :: Either String Int
                      -- ^ String for a named signal, Int for an
                      -- anonymous one.
-                     , signalWidth :: Int
+                     , signalType :: SignalType
                      }
-            deriving (Show)
-
-instance Eq Signal where
-  a == b = (signalID a == signalID b) && (signalWidth a == signalWidth b)
-
-instance Ord Signal where
-  compare a b = case compare (signalID a) (signalID b) of
-                  LT -> LT
-                  GT -> GT
-                  EQ -> compare (signalWidth a) (signalWidth b)
+            deriving (Show, Eq, Ord)
 
 data BinOp = LessThan | GreaterThan | Minus | Plus deriving (Show)
 
@@ -77,13 +78,13 @@ insertNode n = do g <- get
                           (Map.insert nl n $ graphNodes g)
                           (graphOutputs g)
 
-autoSignal :: Maybe Signal -> Int -> GraphS Signal
+autoSignal :: Maybe Signal -> SignalType -> GraphS Signal
 autoSignal (Just s) _ = return s
-autoSignal Nothing w = newSignal w
+autoSignal Nothing t = newSignal t
 
-newSignal :: Int -> GraphS Signal
-newSignal w = do g <- get
-                 let s = Signal (Right $ Map.size $ graphSignals g) w
+newSignal :: SignalType -> GraphS Signal
+newSignal t = do g <- get
+                 let s = Signal (Right $ Map.size $ graphSignals g) t
                  insertSignal s
                  return s
 

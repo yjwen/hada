@@ -11,7 +11,9 @@ instance Outputable Graph where
                   nodes = text "nodes:" <+> (vcat $ map ppr $ Map.toAscList $ graphNodes g)
 
 instance Outputable Signal where
-    ppr s = text "signal" <+> pprSignalName s <+> (ppr $ signalWidth s)
+    ppr s
+      | SimpleSigType b <- signalType s
+      = text "signal" <+> pprSignalName s <+> (ppr b)
 
 pprSignalName :: Signal -> SDoc
 pprSignalName s = case signalID s of

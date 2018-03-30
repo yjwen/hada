@@ -11,6 +11,8 @@ import DFGSyn
 import Verilog
 import PprDFG
 
+import Control.Monad.Trans.Except (runExcept)
+
 data Args = Args
     { dumpCore :: Bool
     , targetFile :: String
@@ -36,7 +38,7 @@ synToVerilog args =
       t <- typecheckModule p
       d <- desugarModule t
       let coreBinds = mg_binds $ coreModule d
-          graphs = map bind coreBinds
+          graphs = map (runExcept . bind) coreBinds
           dumped = if dumpCore args
                    then (map ppr coreBinds) ++ (map (prettyExcept ppr) graphs)
                    else []

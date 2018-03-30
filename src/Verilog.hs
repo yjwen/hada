@@ -22,16 +22,17 @@ toVModule g = text "module" <+> text (graphName g) <+> ports <> semi $$ vcat sta
           statements = Set.foldr (\signal statements -> (signalStatement signal g:statements)) [] $ graphOutputs g
 
 declareSignal :: String -> Signal -> SDoc
-declareSignal head s =
-  text head
-  <+>
-  case signalWidth s of
-    1 -> empty
-    w -> brackets ((int $ w -1) <+> colon <+> (int 0))
-  <+>
-  case signalID s of
-    Left n -> text n
-    Right id -> text $ "_" ++ show id
+declareSignal head s
+  | SimpleSigType w <- signalType s
+  = text head
+    <+>
+    case w of
+      1 -> empty
+      w -> brackets ((int $ w -1) <+> colon <+> (int 0))
+    <+>
+    case signalID s of
+      Left n -> text n
+      Right id -> text $ "_" ++ show id
                                    
 signalReference :: Signal -> SDoc
 signalReference s = text $ case signalID s of
