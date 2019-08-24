@@ -226,7 +226,7 @@ getDataConSize tvSizes dc =
      dcSizes <- mapM ((`withE` "Type variable size not found") . (`lookup` tvSizes)) dcVars
      return $ foldl (+) 0 dcSizes
 
-isVoidTy _ = False -- Obsolete in GHC 8.2. Finding replacement.
+--- isVoidTy _ = False -- Obsolete in GHC 8.2. Finding replacement.
 
 getTypeName :: Type -> StringE [String]
 getTypeName t | Just (tc, ts) <- splitTyConApp_maybe t
