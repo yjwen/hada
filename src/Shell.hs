@@ -6,6 +6,7 @@ import DynFlags
 import HscTypes
 import Outputable
 import PprCore
+import SimplCore
 
 import DFGSyn
 import Verilog
@@ -26,22 +27,24 @@ prettyExcept f (Right (Just a)) = f a
 synToVerilog :: Args -> IO String
 synToVerilog args =
   defaultErrorHandler defaultFatalMessager defaultFlushOut $ do
-    runGhc (Just libdir) $ do
-      dflags <- getSessionDynFlags
-      setSessionDynFlags dflags -- To init package database.
-      target <- guessTarget (targetFile args) Nothing
-      setTargets [target]
-      load LoadAllTargets
+  (ssn, d) <- runGhc (Just libdir) $ do
+    dflags <- getSessionDynFlags
+    setSessionDynFlags dflags -- To init package database.
+    target <- guessTarget (targetFile args) Nothing
+    setTargets [target]
+    load LoadAllTargets
            -- modSum <- getModSummary $ mkModuleName "Abs"
-      modSums <- getModuleGraph
-      p <- parseModule $ head modSums
-      t <- typecheckModule p
-      d <- desugarModule t
-      let coreBinds = mg_binds $ coreModule d
-          graphs = map (runExcept . bind) coreBinds
-          dumped = if dumpCore args
-                   then (map ppr coreBinds) ++ (map (prettyExcept ppr) graphs)
-                   else []
-          vmodules = map (prettyExcept toVModule) graphs
-      -- return $ showSDocUnsafe $ vcat $ (map ppr coreBinds) ++ dumped
-      return $ showSDocUnsafe $ vcat $ dumped ++ vmodules ++ [text ""]
+    modSums <- getModuleGraph
+    p <- parseModule $ head modSums
+    t <- typecheckModule p
+    d <- desugarModule t
+    ssn <- getSession
+    return (ssn, coreModule d)
+  tidy <- core2core ssn d
+  let graphs = map (runExcept . bind) $ mg_binds tidy
+      vmodules = map (prettyExcept toVModule) graphs
+  return $ showSDocUnsafe $ vcat $
+    if dumpCore args
+    then (map ppr $ mg_binds tidy)
+    else (map (prettyExcept toVModule) graphs)
+
