@@ -1,4 +1,4 @@
-module Main where
+module TestShell where
 
 import Data.List.Split
 
