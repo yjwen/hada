@@ -1,4 +1,4 @@
-module Shell(Args(Args), synToVerilog) where
+module Shell(Action(DumpGraph, DumpCore, Experiment), Args(Args), synToVerilog) where
 
 import GHC
 import GHC.Paths (libdir)
@@ -15,11 +15,6 @@ import PprDFG
 
 import Control.Monad.Trans.Except (runExcept)
 
-data Args = Args
-    { dumpCore :: Bool
-    , targetFile :: String
-    }
-
 prettyExcept :: Outputable a => (a -> SDoc) -> Either String (Maybe a) -> SDoc
 prettyExcept _ (Left msg) = text $ "Error: " ++ msg
 prettyExcept _ (Right Nothing) = empty
@@ -30,7 +25,7 @@ synToVerilog args = do tidy <- toTidy $ targetFile args
                        let graphs = map (runExcept . bind) $ mg_binds tidy
                            vmodules = map (prettyExcept toVModule) graphs
                        return $ showSDocUnsafe $ vcat $
-                         if dumpCore args
-                         then (map ppr $ mg_binds tidy)
-                         else (map (prettyExcept toVModule) graphs)
+                         case action args of
+                           DumpCore -> map ppr $ mg_binds tidy
+                           otherwise -> map (prettyExcept toVModule) graphs
 
