@@ -1,4 +1,5 @@
 import System.Environment (getArgs)
+import System.FilePath
 import MyPpr
 import HscTypes(mg_binds)
 import Syn
@@ -6,51 +7,57 @@ import Verilog
 import Outputable
 import DFGSyn
 import PprDFG
-import Text.Parsec
+import Text.ParserCombinators.ReadP
 import Data.Maybe (isJust, catMaybes)
 import Data.List (intercalate)
 import Control.Monad (liftM)
 import Control.Monad.Trans.Except (runExcept)
 
 
-data Action = DumpGraph | DumpCore | MyDumpCore
-data Args = Args
-    { action :: Action
-    , targetFile :: String
-    }
+data Action = DumpCore | MyDumpCore
+data OutputFile = DefaultOutF -- Output file name derived from target file
+                | ExplicitOutF String -- Explicit output file
+                | StandardOutF -- To standard output
+data Param = Param { action :: Maybe Action
+                   , outputFile :: OutputFile
+                   , targetFile :: String
+                   }
 
-argSyntax = do
-  dumpCore <- optionMaybe $ do {string "-";
-                                choice [string "d", string "e"]}
-  spaces
-  fname <- many $ noneOf " \t\n"
-  let action = case dumpCore of
-                 Nothing -> DumpGraph
-                 Just s -> if s == "d"
-                           then DumpCore
-                           else MyDumpCore
+parseArgs :: [String] -> Param -> Either String Param
+parseArgs (s:ss) p
+  | s == "-e" = parseArgs ss $ p {action = Just MyDumpCore}
+  | s == "-d" = parseArgs ss $ p {action = Just DumpCore}
+  | s == "-o" = case ss of
+                  (oname:remain_args) -> parseArgs remain_args $ p {outputFile = ExplicitOutF oname}
+                  otherwise -> Left "Output file name is missing"
+  | s == "-p" = parseArgs ss $ p {outputFile = StandardOutF}
+  | otherwise = parseArgs ss $ p {targetFile = s}
+parseArgs [] p = Right p
 
-  return $ Args action fname
-parseArgs :: String -> Either ParseError Args
-parseArgs = parse argSyntax ""
+defaultParam :: Param
+defaultParam = Param Nothing DefaultOutF ""
 
-
-prettyExcept :: Outputable a => (a -> SDoc) -> Either String (Maybe a) -> SDoc
-prettyExcept _ (Left msg) = text $ "Error: " ++ msg
-prettyExcept _ (Right Nothing) = empty
-prettyExcept f (Right (Just a)) = f a
+-- xxx.hs -> xxx.sv
+getDefaultOutputFile :: String -> String
+getDefaultOutputFile f = addExtension (dropExtension f) ".sv"
 
 main :: IO ()
 main = do
   args <- getArgs
-  case parseArgs $ intercalate " " args of
+  case parseArgs args defaultParam of
     Left err -> putStrLn $ show err
-    Right args -> do
-      tidy <- toTidy $ targetFile args
-      sdoc <- case action args of
-                   DumpCore -> return $ vcat $ map ppr $ mg_binds tidy
-                   MyDumpCore -> return $ myPpr tidy
-                   otherwise -> do docs <- (mapM toVerilog $ mg_binds tidy)
-                                   return $ vcat docs
-      putStrLn $ showSDocUnsafe sdoc
+    Right param -> do
+      tidy <- toTidy $ targetFile param
+      -- Dump if required
+      case action param of
+        Just DumpCore -> putStrLn $ showSDocUnsafe $ vcat $ map ppr $ mg_binds tidy
+        Just MyDumpCore -> putStrLn $ showSDocUnsafe $ myPpr tidy
+        otherwise -> return ()
+      -- Output result
+      docs <- mapM toVerilog $ mg_binds tidy
+      let doc_str = showSDocUnsafe $ vcat docs
+      case outputFile param of
+        StandardOutF -> putStrLn doc_str
+        DefaultOutF -> writeFile (getDefaultOutputFile $ targetFile param) doc_str
+        ExplicitOutF fname -> writeFile fname doc_str
 
