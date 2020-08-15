@@ -71,15 +71,21 @@ typeDeclaration t
 tyConDeclaration :: TyCon -> [Type] -> SDoc
 tyConDeclaration con ts
   | nameIsInModule "GHC.Types" (tyConName con) -- Built-in types in GHC.Types
-  = let conName = getOccString con
-    in if conName == "Int"
-       then
-         if (maxBound::Int) == 0x7FFFFFFF
-         -- Int is 32 bit
-         then text "int"
-         -- Assuming Int is 64 bit
-         else text "longint"
-       else ppr conName
+  = builtInTypeCon $ getOccString con
+
+
+builtInTypeCon :: String -> SDoc
+builtInTypeCon n
+  | n == "Int" = if (maxBound::Int) == 0x7FFFFFFF
+                    -- Int is 32 bit
+                 then text "int"
+                      -- Assuming Int is 64 bit
+                 else text "longint"
+  | n == "Word" = if (maxBound::Word) == 0xFFFFFFFF
+                     -- Word is 32 bit
+                  then text "int unsigned"
+                  else text "longint unsigned"
+  | otherwise = ppr n
   
 getIOVars :: CoreBndr -> CoreExpr -> UniqSM (Var, [Var])
 getIOVars b e = do let (iTypes, oType) = splitFunTys $ varType b;
@@ -137,10 +143,12 @@ getVExpr (Var v) vis
 
 getBuiltInExpr :: Var -> [Var] -> SDoc
 getBuiltInExpr v vis
-  | vname == "$fNumInt_$c+"
+  | vname == "$fNumInt_$c+" || vname == "$fNumWord_$c+"
   = binaryExpr "+" vis
-  | vname == "$fNumInt_$c-"
+  | vname == "$fNumInt_$c-" || vname == "$fNumWord_$c-"
   = binaryExpr "-" vis
+  | vname == "$fNumInt_$c*" || vname == "$fNumWord_$c*"
+  = binaryExpr "*" vis
   | otherwise
   = text "Unknown builtin"
   where vname = getOccString $ getName v
