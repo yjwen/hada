@@ -19,7 +19,7 @@ Cabal-version:       >=1.10
 
 Executable hada
   Main-is: Main.hs
-  other-modules: MyPpr, Verilog
+  other-modules: MyPpr, SVerilog, Syn
   Hs-source-dirs: src
   Default-language: Haskell2010
   Build-depends: base >= 4.9, ghc >= 8.0.1, ghc-paths, containers, transformers, filepath, mtl
@@ -34,7 +34,7 @@ Executable hada
 Test-Suite Test
            Type: detailed-0.9
            Test-module: Test
-           other-modules: Verilog, Syn
+           other-modules: SVerilog, Syn
            Default-language: Haskell2010
            Hs-source-dirs: src
            Build-depends: base, Cabal > 1.9.2, ghc >= 8.0.1, transformers, split, mtl, containers, ghc-paths, parsec

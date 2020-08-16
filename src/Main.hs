@@ -3,7 +3,7 @@ import System.FilePath
 import MyPpr
 import HscTypes(mg_binds)
 import Syn
-import Verilog
+import SVerilog
 import Outputable
 import DFGSyn
 import PprDFG
@@ -54,7 +54,7 @@ main = do
         Just MyDumpCore -> putStrLn $ showSDocUnsafe $ myPpr tidy
         otherwise -> return ()
       -- Output result
-      docs <- mapM toVerilog $ mg_binds tidy
+      docs <- mapM toSV $ mg_binds tidy
       let doc_str = showSDocUnsafe $ vcat docs
       case outputFile param of
         StandardOutF -> putStrLn doc_str

@@ -1,4 +1,4 @@
-module Verilog (toVerilog) where
+module SVerilog (toSV) where
 
 import Outputable
 import CoreSyn
@@ -13,13 +13,13 @@ import FastString (FastString, mkFastString)
 
 import MyPpr -- For dumping
 
-toVerilog :: CoreBind -> IO SDoc
-toVerilog (NonRec b e)
+toSV :: CoreBind -> IO SDoc
+toSV (NonRec b e)
   | isGHCTypesTrNameSApp e = return $ empty
   | isGHCTypesModuleApp e = return $ empty
   | otherwise = toVModule b e
 
-toVerilog (Rec bs) = error "Recursive bindings"
+toSV (Rec bs) = error "Recursive bindings"
 
 nameIsInModule :: String -> Name -> Bool
 nameIsInModule s n = s == (moduleNameString . moduleName. nameModule) n
