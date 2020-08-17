@@ -20,3 +20,11 @@ minusW = (-)
 mulW :: Word -> Word -> Word
 mulW = (*)
 
+plus8 :: Int8 -> Int8 -> Int8
+plus8 = (+)
+
+minus8 :: Int8 -> Int8 -> Int8
+minus8 = (-)
+
+mul8 :: Int8 -> Int8 -> Int8
+mul8 = (*)

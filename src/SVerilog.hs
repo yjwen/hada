@@ -70,8 +70,14 @@ typeDeclaration t
 -- How to represent a TyCon application in a input/output declaration
 tyConDeclaration :: TyCon -> [Type] -> SDoc
 tyConDeclaration con ts
-  | nameIsInModule "GHC.Types" (tyConName con) -- Built-in types in GHC.Types
+  | nameIsInModule "GHC.Types" tn -- Built-in types in GHC.Types
+    ||
+    nameIsInModule "GHC.Int" tn
   = builtInTypeCon $ getOccString con
+  where tn = tyConName con
+
+tyConDeclaration con ts
+  = error ("Unknown type: " ++ (moduleNameString $ moduleName $ nameModule $ tyConName con))
 
 
 builtInTypeCon :: String -> SDoc
@@ -85,6 +91,7 @@ builtInTypeCon n
                      -- Word is 32 bit
                   then text "int unsigned"
                   else text "longint unsigned"
+  | n == "Int8" = text "byte"
   | otherwise = ppr n
   
 getIOVars :: CoreBndr -> CoreExpr -> UniqSM (Var, [Var])
@@ -136,18 +143,26 @@ getStatement vo e vis =
 getVExpr :: CoreExpr -> [Var] -> SDoc
 getVExpr (App e args) vis = getVExpr e vis
 getVExpr (Var v) vis
-  | nameIsInModule "GHC.Num" $ varName v
+  | (nameIsInModule "GHC.Num" vn) ||
+    (nameIsInModule "GHC.Int" vn)
   = getBuiltInExpr v vis
   | otherwise
   = ppr v
+  where vn = varName v
 
 getBuiltInExpr :: Var -> [Var] -> SDoc
 getBuiltInExpr v vis
-  | vname == "$fNumInt_$c+" || vname == "$fNumWord_$c+"
+  | vname == "$fNumInt_$c+" ||
+    vname == "$fNumWord_$c+" ||
+    vname == "$fNumInt8_$c+"
   = binaryExpr "+" vis
-  | vname == "$fNumInt_$c-" || vname == "$fNumWord_$c-"
+  | vname == "$fNumInt_$c-" ||
+    vname == "$fNumWord_$c-" ||
+    vname == "$fNumInt8_$c-"
   = binaryExpr "-" vis
-  | vname == "$fNumInt_$c*" || vname == "$fNumWord_$c*"
+  | vname == "$fNumInt_$c*" ||
+    vname == "$fNumWord_$c*" ||
+    vname == "$fNumInt8_$c*"
   = binaryExpr "*" vis
   | otherwise
   = text "Unknown builtin"
