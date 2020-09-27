@@ -70,9 +70,9 @@ typeDeclaration t
 -- How to represent a TyCon application in a input/output declaration
 tyConDeclaration :: TyCon -> [Type] -> SDoc
 tyConDeclaration con ts
-  | nameIsInModule "GHC.Types" tn -- Built-in types in GHC.Types
-    ||
-    nameIsInModule "GHC.Int" tn
+  | nameIsInModule "GHC.Types" tn || -- Built-in types in GHC.Types
+    nameIsInModule "GHC.Int" tn ||
+    nameIsInModule "GHC.Word" tn
   = builtInTypeCon $ getOccString con
   where tn = tyConName con
 
@@ -92,6 +92,13 @@ builtInTypeCon n
                   then text "int unsigned"
                   else text "longint unsigned"
   | n == "Int8" = text "byte"
+  | n == "Int16" = text "shortint"
+  | n == "Int32" = text "int"
+  | n == "Int64" = text "longint"
+  | n == "Word8" = text "byte unsigned"
+  | n == "Word16" = text "shortint unsigned"
+  | n == "Word32" = text "int unsigned"
+  | n == "Word64" = text "longint unsigned"
   | otherwise = ppr n
   
 getIOVars :: CoreBndr -> CoreExpr -> UniqSM (Var, [Var])
@@ -144,7 +151,8 @@ getVExpr :: CoreExpr -> [Var] -> SDoc
 getVExpr (App e args) vis = getVExpr e vis
 getVExpr (Var v) vis
   | (nameIsInModule "GHC.Num" vn) ||
-    (nameIsInModule "GHC.Int" vn)
+    (nameIsInModule "GHC.Int" vn) ||
+    (nameIsInModule "GHC.Word" vn)
   = getBuiltInExpr v vis
   | otherwise
   = ppr v
@@ -154,15 +162,36 @@ getBuiltInExpr :: Var -> [Var] -> SDoc
 getBuiltInExpr v vis
   | vname == "$fNumInt_$c+" ||
     vname == "$fNumWord_$c+" ||
-    vname == "$fNumInt8_$c+"
+    vname == "$fNumInt8_$c+" ||
+    vname == "$fNumWord8_$c+" ||
+    vname == "$fNumInt16_$c+" ||
+    vname == "$fNumWord16_$c+" ||
+    vname == "$fNumInt32_$c+" ||
+    vname == "$fNumWord32_$c+" ||
+    vname == "$fNumInt64_$c+" ||
+    vname == "$fNumWord64_$c+"
   = binaryExpr "+" vis
   | vname == "$fNumInt_$c-" ||
     vname == "$fNumWord_$c-" ||
-    vname == "$fNumInt8_$c-"
+    vname == "$fNumInt8_$c-" ||
+    vname == "$fNumWord8_$c-" ||
+    vname == "$fNumInt16_$c-" ||
+    vname == "$fNumWord16_$c-" ||
+    vname == "$fNumInt32_$c-" ||
+    vname == "$fNumWord32_$c-" ||
+    vname == "$fNumInt64_$c-" ||
+    vname == "$fNumWord64_$c-"
   = binaryExpr "-" vis
   | vname == "$fNumInt_$c*" ||
     vname == "$fNumWord_$c*" ||
-    vname == "$fNumInt8_$c*"
+    vname == "$fNumInt8_$c*" ||
+    vname == "$fNumWord8_$c*" ||
+    vname == "$fNumInt16_$c*" ||
+    vname == "$fNumWord16_$c*" ||
+    vname == "$fNumInt32_$c*" ||
+    vname == "$fNumWord32_$c*" ||
+    vname == "$fNumInt64_$c*" ||
+    vname == "$fNumWord64_$c*"
   = binaryExpr "*" vis
   | otherwise
   = text "Unknown builtin"
