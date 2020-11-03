@@ -1,5 +1,7 @@
 module SVerilog (toSV) where
 
+import MyPpr
+import Syn (nameIsInModule)
 import Outputable
 import CoreSyn
 import Name (Name, nameModule, getOccString, getName, mkSystemVarName)
@@ -14,33 +16,15 @@ import FastString (FastString, mkFastString)
 import MyPpr -- For dumping
 
 toSV :: CoreBind -> IO SDoc
-toSV (NonRec b e)
-  | isGHCTypesTrNameSApp e = return $ empty
-  | isGHCTypesModuleApp e = return $ empty
-  | otherwise = toVModule b e
-
+toSV (NonRec b e) = toVModule b e
 toSV (Rec bs) = error "Recursive bindings"
-
-nameIsInModule :: String -> Name -> Bool
-nameIsInModule s n = s == (moduleNameString . moduleName. nameModule) n
-
-
--- If the var is TrNameS defined in GHC.Types
-isGHCTypesTrNameSApp :: CoreExpr -> Bool
-isGHCTypesTrNameSApp (App (Var v) _) =
-  (getOccString v == "TrNameS") && (nameIsInModule "GHC.Types" $ varName v)
-isGHCTypesTrNameSApp _ = False
-
--- If the var is Module define in GHC.Types
-isGHCTypesModuleApp :: CoreExpr -> Bool
-isGHCTypesModuleApp (App (App (Var v) _) _) =
-  (getOccString v == "Module") && (nameIsInModule "GHC.Types" $ varName v)
-isGHCTypesModuleApp _ = False
 
 toVModule :: CoreBndr -> CoreExpr -> IO SDoc
 toVModule b e =
   do us <- mkSplitUniqSupply 'a'
-     let (vo, vis) = initUs_ us $ getIOVars b e
+     let (_, otype) = splitFunTys $ varType b
+         vo = initUs_ us $ mkAutoVar (mkFastString "o") otype
+         vis = collectInputVars e
      return $ (text "module" <+> ppr b <+>
                -- Port definition
                parens (vcat $ punctuate (text ", ")  ((outputDef vo):(map inputDef vis))) <> semi
@@ -49,7 +33,6 @@ toVModule b e =
                nest 2 (getStatement vo e vis)
                $+$
                text "endmodule")
-
 
 -- | Generate the output port definition
 outputDef :: Var -> SDoc
@@ -101,11 +84,6 @@ builtInTypeCon n
   | n == "Word64" = text "longint unsigned"
   | otherwise = ppr n
   
-getIOVars :: CoreBndr -> CoreExpr -> UniqSM (Var, [Var])
-getIOVars b e = do let (iTypes, oType) = splitFunTys $ varType b;
-                   vo <- mkOutputVar oType;
-                   vis <- mkInputVars iTypes e
-                   return (vo, vis)
 
 newUniqueName :: FastString -> UniqSM Name
 newUniqueName str = do u <- getUniqueM
@@ -114,9 +92,11 @@ newUniqueName str = do u <- getUniqueM
 mkAutoVar :: FastString -> Type -> UniqSM Var
 mkAutoVar vname vtype = do n <- newUniqueName vname
                            return $ mkLocalVar VanillaId n vtype vanillaIdInfo
-                           
-mkOutputVar :: Type -> UniqSM Var
-mkOutputVar = mkAutoVar $ mkFastString "o"
+
+-- | Assuming the expression being η-abstracted.
+collectInputVars :: CoreExpr -> [Var]
+collectInputVars (Lam b e) = b:collectInputVars e
+collectInputVars _ = []
 
 -- | Extract input vars from the expression and arg. Create unique vars
 -- to represent input if necessary
@@ -157,7 +137,10 @@ getVExpr (Var v) vis
   | otherwise
   = ppr v
   where vn = varName v
-
+getVExpr (Lam b exp) vis = getVExpr exp vis
+getVExpr e vis = error ("Unexpected expression in getVExpr: " ++
+                        (showSDocUnsafe $ myPprExpr e))
+                    
 getBuiltInExpr :: Var -> [Var] -> SDoc
 getBuiltInExpr v vis
   | vname == "$fNumInt_$c+" ||

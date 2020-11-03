@@ -45,7 +45,7 @@ myPprExpr e = case e of
                 Var v -> text "Var" <+> (parens (myPprVar v))
                 Lit literal -> text "Lit" <+> (ppr literal)
                 App e args -> text "App" <+> parens (myPprExpr e) <+> (myPprExpr args)
-                Lam b e -> text "Lam"
+                Lam b e -> text "Lam" <+> parens (ppr b) <+> (myPprExpr e)
                 Let b e -> text "Let"
                 Case e b t alts -> text "Case"
                 Cast e c -> text "Cast"

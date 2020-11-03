@@ -1,9 +1,7 @@
-module Plus (plus, minus) where
+module Plus (plus) where
 plus :: Int -> Int -> Int
 plus = (+)
 
-minus :: Int -> Int -> Int
-minus = (-)
 
 
 

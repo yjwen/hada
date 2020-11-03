@@ -2,7 +2,7 @@ import System.Environment (getArgs)
 import System.FilePath
 import MyPpr
 import HscTypes(mg_binds)
-import Syn
+import Syn (syn, toTidy)
 import SVerilog
 import Outputable
 import DFGSyn
@@ -21,6 +21,7 @@ data OutputFile = DefaultOutF -- Output file name derived from target file
 data Param = Param { action :: Maybe Action
                    , outputFile :: OutputFile
                    , targetFile :: String
+                   , topModule :: String
                    }
 
 parseArgs :: [String] -> Param -> Either String Param
@@ -31,11 +32,14 @@ parseArgs (s:ss) p
                   (oname:remain_args) -> parseArgs remain_args $ p {outputFile = ExplicitOutF oname}
                   otherwise -> Left "Output file name is missing"
   | s == "-p" = parseArgs ss $ p {outputFile = StandardOutF}
+  | s == "-t" = case ss of
+                  (name:remain_args) -> parseArgs remain_args $ p {topModule = name}
+                  otherwise -> Left "Top module name is missing"
   | otherwise = parseArgs ss $ p {targetFile = s}
 parseArgs [] p = Right p
 
 defaultParam :: Param
-defaultParam = Param Nothing DefaultOutF ""
+defaultParam = Param Nothing DefaultOutF "" ""
 
 -- xxx.hs -> xxx.sv
 getDefaultOutputFile :: String -> String
@@ -54,7 +58,7 @@ main = do
         Just MyDumpCore -> putStrLn $ showSDocUnsafe $ myPpr tidy
         otherwise -> return ()
       -- Output result
-      docs <- mapM toSV $ mg_binds tidy
+      docs <- mapM toSV $ syn (topModule param) $ mg_binds tidy
       let doc_str = showSDocUnsafe $ vcat docs
       case outputFile param of
         StandardOutF -> putStrLn doc_str
