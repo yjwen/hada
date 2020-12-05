@@ -1,4 +1,5 @@
 module MyPpr where
+import Prelude hiding ((<>))
 import HscTypes (mg_binds, ModGuts)
 import Name(Name, pprNameDefnLoc)
 import CoreSyn(Bind(NonRec, Rec), CoreBind,

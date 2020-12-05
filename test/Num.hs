@@ -1,4 +1,13 @@
-module Num where
+module Num(plus, minus, mul,
+           plusW, minusW, mulW,
+           plus8, minus8, mul8,
+           plusW8, minusW8, mulW8,
+           plus16, minus16, mul16,
+           plusW16, minusW16, mulW16,
+           plus32, minus32, mul32,
+           plusW32, minusW32, mulW32,
+           plus64, minus64, mul64,
+           plusW64, minusW64, mulW64) where
 
 import Data.Int
 import Data.Word
