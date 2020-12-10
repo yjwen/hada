@@ -4,3 +4,7 @@
 *.exe
 dist/
 .stack-work
+dist-newstyle
+obj_dir
+test/build
+test/test*
