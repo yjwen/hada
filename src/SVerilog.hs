@@ -94,48 +94,41 @@ getVExpr e vis = error ("Unexpected expression in getVExpr: " ++
                     
 getBuiltInExpr :: Var -> [Var] -> SDoc
 getBuiltInExpr v vis
-  | vname == "$fNumInt_$c+" ||
-    vname == "$fNumWord_$c+" ||
-    vname == "$fNumInt8_$c+" ||
-    vname == "$fNumWord8_$c+" ||
-    vname == "$fNumInt16_$c+" ||
-    vname == "$fNumWord16_$c+" ||
-    vname == "$fNumInt32_$c+" ||
-    vname == "$fNumWord32_$c+" ||
-    vname == "$fNumInt64_$c+" ||
-    vname == "$fNumWord64_$c+"
+  | vname == "$fNumInt_$c+" || vname == "$fNumWord_$c+" ||
+    vname == "$fNumInt8_$c+" || vname == "$fNumWord8_$c+" ||
+    vname == "$fNumInt16_$c+" || vname == "$fNumWord16_$c+" ||
+    vname == "$fNumInt32_$c+" || vname == "$fNumWord32_$c+" ||
+    vname == "$fNumInt64_$c+" || vname == "$fNumWord64_$c+"
   = binaryExpr "+" vis
-  | vname == "$fNumInt_$c-" ||
-    vname == "$fNumWord_$c-" ||
-    vname == "$fNumInt8_$c-" ||
-    vname == "$fNumWord8_$c-" ||
-    vname == "$fNumInt16_$c-" ||
-    vname == "$fNumWord16_$c-" ||
-    vname == "$fNumInt32_$c-" ||
-    vname == "$fNumWord32_$c-" ||
-    vname == "$fNumInt64_$c-" ||
-    vname == "$fNumWord64_$c-"
+  | vname == "$fNumInt_$c-" || vname == "$fNumWord_$c-" ||
+    vname == "$fNumInt8_$c-" || vname == "$fNumWord8_$c-" ||
+    vname == "$fNumInt16_$c-" || vname == "$fNumWord16_$c-" ||
+    vname == "$fNumInt32_$c-" || vname == "$fNumWord32_$c-" ||
+    vname == "$fNumInt64_$c-" || vname == "$fNumWord64_$c-"
   = binaryExpr "-" vis
-  | vname == "$fNumInt_$c*" ||
-    vname == "$fNumWord_$c*" ||
-    vname == "$fNumInt8_$c*" ||
-    vname == "$fNumWord8_$c*" ||
-    vname == "$fNumInt16_$c*" ||
-    vname == "$fNumWord16_$c*" ||
-    vname == "$fNumInt32_$c*" ||
-    vname == "$fNumWord32_$c*" ||
-    vname == "$fNumInt64_$c*" ||
-    vname == "$fNumWord64_$c*"
+  | vname == "$fNumInt_$c*" || vname == "$fNumWord_$c*" ||
+    vname == "$fNumInt8_$c*" || vname == "$fNumWord8_$c*" ||
+    vname == "$fNumInt16_$c*" || vname == "$fNumWord16_$c*" ||
+    vname == "$fNumInt32_$c*" || vname == "$fNumWord32_$c*" ||
+    vname == "$fNumInt64_$c*" || vname == "$fNumWord64_$c*"
   = binaryExpr "*" vis
+  | vname == "$fNumInt_$cnegate" || vname == "$fNumWord_$cnegate" ||
+    vname == "$fNumInt8_$cnegate" || vname == "$fNumWord8_$cnegate" ||
+    vname == "$fNumInt16_$cnegate" || vname == "$fNumWord16_$cnegate" ||
+    vname == "$fNumInt32_$cnegate" || vname == "$fNumWord32_$cnegate" ||
+    vname == "$fNumInt64_$cnegate" || vname == "$fNumWord64_$cnegate"
+  = unaryExpr "-" vis
   | otherwise
   = text "Unknown builtin"
   where vname = getOccString $ getName v
 
 binaryExpr :: String -> [Var] -> SDoc
 binaryExpr op (v0:v1:s) = ppr v0 <+> text op <+> ppr v1
-binaryExpr _ _ = error "Insufficient argument for built-in binary expression"
+binaryExpr _ _ = error "Insufficient operands for built-in binary expression"
 
-
+unaryExpr :: String -> [Var] -> SDoc
+unaryExpr op (v:s) = text op <> ppr v
+unaryExpr _ _ = error "Insufficient operands for built-in unary expression" 
                                    
 
 

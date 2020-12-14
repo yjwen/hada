@@ -35,6 +35,17 @@ import qualified Wmul32
 import qualified WmulW32
 import qualified Wmul64
 import qualified WmulW64
+import qualified Wneg
+import qualified Wneg8
+import qualified Wneg16
+import qualified Wneg32
+import qualified Wneg64
+import qualified WnegW
+import qualified WnegW8
+import qualified WnegW16
+import qualified WnegW32
+import qualified WnegW64
+
 
 repeatedTest :: IO (Maybe String)  -> Test
 repeatedTest test = TestCase ((sequence $ replicate 1024 test) >>= assertAllNothing)
@@ -73,6 +84,16 @@ numTests = (TestList . map (\(name, test) -> TestLabel name $ repeatedTest test)
            , ("mulW16" , testNum mulW16 WmulW16.mulW16)
            , ("mulW32" , testNum mulW32 WmulW32.mulW32)
            , ("mulW64" , testNum mulW64 WmulW64.mulW64)
+           , ("neg", testNum1 neg Wneg.neg)
+           , ("neg8", testNum1 neg8 Wneg8.neg8)
+           , ("neg16", testNum1 neg16 Wneg16.neg16)
+           , ("neg32", testNum1 neg32 Wneg32.neg32)
+           , ("neg64", testNum1 neg64 Wneg64.neg64)
+           , ("negW", testNum1 negW WnegW.negW)
+           , ("negW8", testNum1 negW8 WnegW8.negW8)
+           , ("negW16", testNum1 negW16 WnegW16.negW16)
+           , ("negW32", testNum1 negW32 WnegW32.negW32)
+           , ("negW64", testNum1 negW64 WnegW64.negW64)
            ]
 
 -- | Compare verilated binary function with its origin, return Nothing
@@ -92,6 +113,19 @@ testNum goldenF testF = do op0 <- randomIO
                                               ". Operands are (" ++ show op0 ++
                                               ", " ++ show op1 ++
                                               ")."))
+
+-- | Test unary function
+testNum1 :: (Random a, Show a, Eq b, Show b) => (a -> b) -> (a -> IO b) -> IO (Maybe String)
+testNum1 goldenF testF = do op <- randomIO
+                            test <- testF op
+                            let golden = goldenF op
+                            return (if test == golden
+                                     then Nothing
+                                     else Just ("Expecting " ++ show golden ++
+                                                ", but found " ++ show test ++
+                                                ". Operand is " ++ show op ++ "."))
+                                     
+
 main = do counts <- runTestTT numTests
           if errors counts > 0 || failures counts > 0
             then exitFailure
