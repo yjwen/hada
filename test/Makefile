@@ -1,6 +1,6 @@
 build_dir = build
 
-NumBinds = plus minus mul neg $(foreach d,W 8 W8 16 W16 32 W32 64 W64,plus$(d) minus$(d) mul$(d) neg$(d))
+NumBinds = plus minus mul neg abs_ $(foreach d,W 8 W8 16 W16 32 W32 64 W64,plus$(d) minus$(d) mul$(d) neg$(d) abs$(d))
 VERILATOR ?= $(shell which verilator)
 
 ifeq ($(VERILATOR),)
@@ -16,13 +16,14 @@ NumSVs := $(NumBinds:%=$(build_dir)/%.sv)
 NumVLibs := $(foreach b,$(NumBinds),$(build_dir)/$b/V$(b)__ALL.a)
 NumCPPObjs := $(NumBinds:%=$(build_dir)/W%.cpp.o)
 NumWHS := $(NumBinds:%=$(build_dir)/W%.hs) # Haskell wrapper
+hada-package := ../lib/hada.sv
 define NumRules
 $(build_dir)/$1.sv $(build_dir)/W$1.cpp $(build_dir)/W$1.hs : Num.hs
 	[ -d $(build_dir) ] || mkdir $(build_dir)
 	cd .. && cabal run hada --\
 	test/$$< -o test/$(build_dir)/$1.sv -w test/$(build_dir)/W$1 -t $1
 $(build_dir)/$1/V$(1)__ALL.a $(build_dir)/$1/V$1.h: $(build_dir)/$1.sv $(build_dir)/W$1.cpp
-	$(VERILATOR) -cc --build -sv --Mdir $$(dir $$@) $$^
+	$(VERILATOR) -cc --build -sv --Mdir $$(dir $$@) --prefix V$1 $(hada-package) $$^ 
 $(build_dir)/W$1.cpp.o: $(build_dir)/W$1.cpp $(build_dir)/$1/V$1.h
 	$(CXX) $(VERILATOR-CFLAGS) -I./$(build_dir)/$1 -c $$< -o $$@
 endef

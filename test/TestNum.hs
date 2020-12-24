@@ -45,6 +45,16 @@ import qualified WnegW8
 import qualified WnegW16
 import qualified WnegW32
 import qualified WnegW64
+import qualified Wabs_
+import qualified WabsW
+import qualified Wabs8
+import qualified WabsW8
+import qualified Wabs16
+import qualified WabsW16
+import qualified Wabs32
+import qualified WabsW32
+import qualified Wabs64
+import qualified WabsW64
 
 
 repeatedTest :: IO (Maybe String)  -> Test
@@ -94,6 +104,16 @@ numTests = (TestList . map (\(name, test) -> TestLabel name $ repeatedTest test)
            , ("negW16", testNum1 negW16 WnegW16.negW16)
            , ("negW32", testNum1 negW32 WnegW32.negW32)
            , ("negW64", testNum1 negW64 WnegW64.negW64)
+           , ("abs", testNum1 abs_ Wabs_.abs_)
+           , ("abs8", testNum1 abs8 Wabs8.abs8)
+           , ("abs16", testNum1 abs16 Wabs16.abs16)
+           , ("abs32", testNum1 abs32 Wabs32.abs32)
+           , ("abs64", testNum1 abs64 Wabs64.abs64)
+           , ("absW", testNum1 absW WabsW.absW)
+           , ("absW8", testNum1 absW8 WabsW8.absW8)
+           , ("absW16", testNum1 absW16 WabsW16.absW16)
+           , ("absW32", testNum1 absW32 WabsW32.absW32)
+           , ("absW64", testNum1 absW64 WabsW64.absW64)
            ]
 
 -- | Compare verilated binary function with its origin, return Nothing

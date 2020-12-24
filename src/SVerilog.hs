@@ -118,6 +118,20 @@ getBuiltInExpr v vis
     vname == "$fNumInt32_$cnegate" || vname == "$fNumWord32_$cnegate" ||
     vname == "$fNumInt64_$cnegate" || vname == "$fNumWord64_$cnegate"
   = unaryExpr "-" vis
+  | vname == "$fNumInt_$cabs"
+  = funCall (if (maxBound::Word) == 0xFFFFFFFF then "hada::abs32" else "hada::abs64") vis
+  | vname == "$fNumInt8_$cabs"
+  = funCall "hada::abs8" vis
+  | vname == "$fNumInt16_$cabs"
+  = funCall "hada::abs16" vis
+  | vname == "$fNumInt32_$cabs"
+  = funCall "hada::abs32" vis
+  | vname == "$fNumInt64_$cabs"
+  = funCall "hada::abs64" vis
+  | vname == "$fNumWord_$cabs" || vname == "$fNumWord8_$cabs" ||
+    vname == "$fNumWord16_$cabs" || vname == "$fNumWord32_$cabs" ||
+    vname == "$fNumWord64_$cabs"
+  = varExpr vis
   | otherwise
   = text "Unknown builtin"
   where vname = getOccString $ getName v
@@ -127,8 +141,11 @@ binaryExpr op (v0:v1:s) = ppr v0 <+> text op <+> ppr v1
 binaryExpr _ _ = error "Insufficient operands for built-in binary expression"
 
 unaryExpr :: String -> [Var] -> SDoc
-unaryExpr op (v:s) = text op <> ppr v
-unaryExpr _ _ = error "Insufficient operands for built-in unary expression" 
+unaryExpr op vs = text op <> varExpr vs
+
+varExpr :: [Var] -> SDoc
+varExpr (v:vs) = ppr v
+varExpr _ = error "Insufficient operand" 
                                    
-
-
+funCall :: String -> [Var] -> SDoc
+funCall fName vs = text fName <> parens (pprWithCommas ppr vs)
