@@ -16,6 +16,8 @@ import UniqSupply (UniqSM, initUs_, mkSplitUniqSupply, getUniqueM)
 import IdInfo (IdDetails(VanillaId), vanillaIdInfo)
 import FastString (FastString, mkFastString)
 
+import Data.List
+
 import MyPpr -- For dumping
 
 toSV :: CoreBind -> IO (SDoc, Var)
@@ -94,47 +96,33 @@ getVExpr e vis = error ("Unexpected expression in getVExpr: " ++
                     
 getBuiltInExpr :: Var -> [Var] -> SDoc
 getBuiltInExpr v vis
-  | vname == "$fNumInt_$c+" || vname == "$fNumWord_$c+" ||
-    vname == "$fNumInt8_$c+" || vname == "$fNumWord8_$c+" ||
-    vname == "$fNumInt16_$c+" || vname == "$fNumWord16_$c+" ||
-    vname == "$fNumInt32_$c+" || vname == "$fNumWord32_$c+" ||
-    vname == "$fNumInt64_$c+" || vname == "$fNumWord64_$c+"
+  | fname == "$c+" && isNum
   = binaryExpr "+" vis
-  | vname == "$fNumInt_$c-" || vname == "$fNumWord_$c-" ||
-    vname == "$fNumInt8_$c-" || vname == "$fNumWord8_$c-" ||
-    vname == "$fNumInt16_$c-" || vname == "$fNumWord16_$c-" ||
-    vname == "$fNumInt32_$c-" || vname == "$fNumWord32_$c-" ||
-    vname == "$fNumInt64_$c-" || vname == "$fNumWord64_$c-"
+  | fname == "$c-" && isNum
   = binaryExpr "-" vis
-  | vname == "$fNumInt_$c*" || vname == "$fNumWord_$c*" ||
-    vname == "$fNumInt8_$c*" || vname == "$fNumWord8_$c*" ||
-    vname == "$fNumInt16_$c*" || vname == "$fNumWord16_$c*" ||
-    vname == "$fNumInt32_$c*" || vname == "$fNumWord32_$c*" ||
-    vname == "$fNumInt64_$c*" || vname == "$fNumWord64_$c*"
+  | fname == "$c*" && isNum
   = binaryExpr "*" vis
-  | vname == "$fNumInt_$cnegate" || vname == "$fNumWord_$cnegate" ||
-    vname == "$fNumInt8_$cnegate" || vname == "$fNumWord8_$cnegate" ||
-    vname == "$fNumInt16_$cnegate" || vname == "$fNumWord16_$cnegate" ||
-    vname == "$fNumInt32_$cnegate" || vname == "$fNumWord32_$cnegate" ||
-    vname == "$fNumInt64_$cnegate" || vname == "$fNumWord64_$cnegate"
+  | fname == "$cnegate" && isNum
   = unaryExpr "-" vis
-  | vname == "$fNumInt_$cabs"
-  = funCall (if (maxBound::Word) == 0xFFFFFFFF then "hada::abs32" else "hada::abs64") vis
-  | vname == "$fNumInt8_$cabs"
-  = funCall "hada::abs8" vis
-  | vname == "$fNumInt16_$cabs"
-  = funCall "hada::abs16" vis
-  | vname == "$fNumInt32_$cabs"
-  = funCall "hada::abs32" vis
-  | vname == "$fNumInt64_$cabs"
-  = funCall "hada::abs64" vis
-  | vname == "$fNumWord_$cabs" || vname == "$fNumWord8_$cabs" ||
-    vname == "$fNumWord16_$cabs" || vname == "$fNumWord32_$cabs" ||
-    vname == "$fNumWord64_$cabs"
-  = varExpr vis
+  | fname == "$cabs" && isNum
+  = if "$fNumInt" `isPrefixOf` cname
+    -- Int, Int8 ~ Int64
+    then funCall absFunc vis
+    -- Word, Word8 ~ Word 64
+    else varExpr vis
   | otherwise
   = text "Unknown builtin"
   where vname = getOccString $ getName v
+        (cname, fname') = break (== '_') vname
+        fname = drop 1 fname'
+        isNum = ("$fNumInt" `isPrefixOf` cname) || ("$fNumWord" `isPrefixOf` cname)
+        absFunc =  case intWidthStr of
+                     [] -> if (maxBound::Word) == 0xFFFFFFFF
+                           then "hada::abs32"
+                           else "hada::abs64"
+                     otherwise -> "hada::abs" ++ intWidthStr
+        intWidthStr = drop 8 cname
+
 
 binaryExpr :: String -> [Var] -> SDoc
 binaryExpr op (v0:v1:s) = ppr v0 <+> text op <+> ppr v1
