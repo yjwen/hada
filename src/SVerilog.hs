@@ -107,22 +107,26 @@ getBuiltInExpr v vis
   | fname == "$cabs" && isNum
   = if "$fNumInt" `isPrefixOf` cname
     -- Int, Int8 ~ Int64
-    then funCall absFunc vis
-    -- Word, Word8 ~ Word 64
+    then funCall ("hada::abs" ++ (autoWidthStr $ drop 8 cname)) vis
+    -- Word, Word8 ~ Word64
     else varExpr vis
+  | fname == "$csignum" && isNum
+  = if "$fNumInt" `isPrefixOf` cname
+    -- Int, Int8 ~ Int64
+    then funCall ("hada::signum" ++ (autoWidthStr $ drop 8 cname)) vis
+    -- Word, Word8 ~ Word64
+    else funCall ("hada::signumU" ++ (autoWidthStr $ drop 9 cname)) vis
   | otherwise
   = text "Unknown builtin"
   where vname = getOccString $ getName v
         (cname, fname') = break (== '_') vname
         fname = drop 1 fname'
         isNum = ("$fNumInt" `isPrefixOf` cname) || ("$fNumWord" `isPrefixOf` cname)
-        absFunc =  case intWidthStr of
-                     [] -> if (maxBound::Word) == 0xFFFFFFFF
-                           then "hada::abs32"
-                           else "hada::abs64"
-                     otherwise -> "hada::abs" ++ intWidthStr
-        intWidthStr = drop 8 cname
-
+        autoWidthStr str =  case str of
+                              [] -> if (maxBound::Word) == 0xFFFFFFFF
+                                    then "32"
+                                    else "64"
+                              otherwise -> str
 
 binaryExpr :: String -> [Var] -> SDoc
 binaryExpr op (v0:v1:s) = ppr v0 <+> text op <+> ppr v1

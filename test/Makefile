@@ -1,6 +1,6 @@
 build_dir = build
 
-NumBinds = plus minus mul neg abs_ $(foreach d,W 8 W8 16 W16 32 W32 64 W64,plus$(d) minus$(d) mul$(d) neg$(d) abs$(d))
+NumBinds = plus minus mul neg abs_ sig $(foreach d,W 8 W8 16 W16 32 W32 64 W64,plus$(d) minus$(d) mul$(d) neg$(d) abs$(d) sig$(d))
 VERILATOR ?= $(shell which verilator)
 
 ifeq ($(VERILATOR),)

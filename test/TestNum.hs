@@ -55,7 +55,16 @@ import qualified Wabs32
 import qualified WabsW32
 import qualified Wabs64
 import qualified WabsW64
-
+import qualified Wsig
+import qualified Wsig8
+import qualified Wsig16
+import qualified Wsig32
+import qualified Wsig64
+import qualified WsigW
+import qualified WsigW8
+import qualified WsigW16
+import qualified WsigW32
+import qualified WsigW64
 
 repeatedTest :: IO (Maybe String)  -> Test
 repeatedTest test = TestCase ((sequence $ replicate 1024 test) >>= assertAllNothing)
@@ -114,6 +123,16 @@ numTests = (TestList . map (\(name, test) -> TestLabel name $ repeatedTest test)
            , ("absW16", testNum1 absW16 WabsW16.absW16)
            , ("absW32", testNum1 absW32 WabsW32.absW32)
            , ("absW64", testNum1 absW64 WabsW64.absW64)
+           , ("sig", testNum1 sig Wsig.sig)
+           , ("sig8", testNum1 sig8 Wsig8.sig8)
+           , ("sig16", testNum1 sig16 Wsig16.sig16)
+           , ("sig32", testNum1 sig32 Wsig32.sig32)
+           , ("sig64", testNum1 sig64 Wsig64.sig64)
+           , ("sigW", testNum1 sigW WsigW.sigW)
+           , ("sigW8", testNum1 sigW8 WsigW8.sigW8)
+           , ("sigW16", testNum1 sigW16 WsigW16.sigW16)
+           , ("sigW32", testNum1 sigW32 WsigW32.sigW32)
+           , ("sigW64", testNum1 sigW64 WsigW64.sigW64)
            ]
 
 -- | Compare verilated binary function with its origin, return Nothing
