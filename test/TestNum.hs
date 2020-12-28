@@ -65,6 +65,26 @@ import qualified WsigW8
 import qualified WsigW16
 import qualified WsigW32
 import qualified WsigW64
+import qualified Weq
+import qualified Weq8
+import qualified Weq16
+import qualified Weq32
+import qualified Weq64
+import qualified WeqW
+import qualified WeqW8
+import qualified WeqW16
+import qualified WeqW32
+import qualified WeqW64
+import qualified Wneq
+import qualified Wneq8
+import qualified Wneq16
+import qualified Wneq32
+import qualified Wneq64
+import qualified WneqW
+import qualified WneqW8
+import qualified WneqW16
+import qualified WneqW32
+import qualified WneqW64
 
 repeatedTest :: IO (Maybe String)  -> Test
 repeatedTest test = TestCase ((sequence $ replicate 1024 test) >>= assertAllNothing)
@@ -133,6 +153,26 @@ numTests = (TestList . map (\(name, test) -> TestLabel name $ repeatedTest test)
            , ("sigW16", testNum1 sigW16 WsigW16.sigW16)
            , ("sigW32", testNum1 sigW32 WsigW32.sigW32)
            , ("sigW64", testNum1 sigW64 WsigW64.sigW64)
+           , ("eq", testNum eq Weq.eq)
+           , ("eq8", testNum eq8 Weq8.eq8)
+           , ("eq16", testNum eq16 Weq16.eq16)
+           , ("eq32", testNum eq32 Weq32.eq32)
+           , ("eq64", testNum eq64 Weq64.eq64)
+           , ("eqW", testNum eqW WeqW.eqW)
+           , ("eqW8", testNum eqW8 WeqW8.eqW8)
+           , ("eqW16", testNum eqW16 WeqW16.eqW16)
+           , ("eqW32", testNum eqW32 WeqW32.eqW32)
+           , ("eqW64", testNum eqW64 WeqW64.eqW64)
+           , ("neq", testNum neq Wneq.neq)
+           , ("neq8", testNum neq8 Wneq8.neq8)
+           , ("neq16", testNum neq16 Wneq16.neq16)
+           , ("neq32", testNum neq32 Wneq32.neq32)
+           , ("neq64", testNum neq64 Wneq64.neq64)
+           , ("neqW", testNum neqW WneqW.neqW)
+           , ("neqW8", testNum neqW8 WneqW8.neqW8)
+           , ("neqW16", testNum neqW16 WneqW16.neqW16)
+           , ("neqW32", testNum neqW32 WneqW32.neqW32)
+           , ("neqW64", testNum neqW64 WneqW64.neqW64)
            ]
 
 -- | Compare verilated binary function with its origin, return Nothing

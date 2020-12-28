@@ -88,6 +88,8 @@ getVExpr (Var v) vis
     varIsInModule v "GHC.Int" ||
     varIsInModule v "GHC.Word"
   = getBuiltInExpr v vis
+  | varIsInModule v "GHC.Classes"
+  = getClassesBuiltInExpr v vis
   | otherwise
   = ppr v
 getVExpr (Lam b exp) vis = getVExpr exp vis
@@ -116,6 +118,12 @@ getBuiltInExpr v vis
     then funCall ("hada::signum" ++ (autoWidthStr $ drop 8 cname)) vis
     -- Word, Word8 ~ Word64
     else funCall ("hada::signumU" ++ (autoWidthStr $ drop 9 cname)) vis
+  | "eqInt" `isPrefixOf` vname ||
+    "eqWord" `isPrefixOf` vname
+  = binaryExpr "==" vis
+  | "neInt" `isPrefixOf` vname ||
+    "neWord" `isPrefixOf` vname
+  = binaryExpr "!=" vis
   | otherwise
   = text "Unknown builtin"
   where vname = getOccString $ getName v
@@ -127,6 +135,18 @@ getBuiltInExpr v vis
                                     then "32"
                                     else "64"
                               otherwise -> str
+
+getClassesBuiltInExpr :: Var -> [Var] -> SDoc
+getClassesBuiltInExpr v vis
+  | "eqInt" `isPrefixOf` vname ||
+    "eqWord" `isPrefixOf` vname
+  = binaryExpr "==" vis
+  | "neInt" `isPrefixOf` vname ||
+    "neWord" `isPrefixOf` vname
+  = binaryExpr "!=" vis
+  | otherwise
+  = error ("Unknown GHC.Classes binding " ++ vname)
+  where vname = getOccString $ getName v 
 
 binaryExpr :: String -> [Var] -> SDoc
 binaryExpr op (v0:v1:s) = ppr v0 <+> text op <+> ppr v1

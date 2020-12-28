@@ -14,6 +14,7 @@ data BitWidth = MachineInt | SByte | DByte | QByte | OByte
 -- Synthesizable type
 data SynType = SynInt { bitWidth :: BitWidth
                       , isSigned :: Bool }
+             | SynBit
              deriving (Show)
 
 -- Try to synthesize a type
@@ -49,6 +50,7 @@ builtinType n
   | n == "Word16" = SynInt DByte False
   | n == "Word32" = SynInt QByte False
   | n == "Word64" = SynInt OByte False
+  | n == "Bool" = SynBit
   | otherwise = error ("Unknown builtin type: " ++ n)
 
 signess True = empty
@@ -63,6 +65,7 @@ instance Outputable SynType where
   ppr (SynInt DByte s) = text "shortint" <+> signess s
   ppr (SynInt QByte s) = text "int" <+> signess s
   ppr (SynInt OByte s) = text "longint" <+> signess s
+  ppr SynBit = text "bit"
 
 csigness True = empty
 csigness False = char 'u'
@@ -77,6 +80,7 @@ cppr (SynInt SByte s) = csigness s <> text "int8_t"
 cppr (SynInt DByte s) = csigness s <> text "int16_t"
 cppr (SynInt QByte s) = csigness s <> text "int32_t"
 cppr (SynInt OByte s) = csigness s <> text "int64_t"
+cppr SynBit = text "bool"
 
 -- For ppr syn types back as Haskell types
 hsppr :: SynType -> SDoc
@@ -90,5 +94,4 @@ hsppr (SynInt QByte s) = text $ case s of True -> "Int32"
                                           False -> "Word32"
 hsppr (SynInt OByte s) = text $ case s of True -> "Int64"
                                           False -> "Word64"
-
-
+hsppr SynBit = text "Bool"
