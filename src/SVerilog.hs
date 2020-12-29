@@ -124,6 +124,18 @@ getBuiltInExpr v vis
   | "neInt" `isPrefixOf` vname ||
     "neWord" `isPrefixOf` vname
   = binaryExpr "!=" vis
+  | "ltInt" `isPrefixOf` vname ||
+    "ltWord" `isPrefixOf` vname
+  = binaryExpr "<" vis
+  | "leInt" `isPrefixOf` vname ||
+    "leWord" `isPrefixOf` vname
+  = binaryExpr "<=" vis
+  | "gtInt" `isPrefixOf` vname ||
+    "gtWord" `isPrefixOf` vname
+  = binaryExpr ">" vis
+  | "geInt" `isPrefixOf` vname ||
+    "geWord" `isPrefixOf` vname
+  = binaryExpr ">=" vis
   | otherwise
   = text "Unknown builtin"
   where vname = getOccString $ getName v
@@ -144,6 +156,14 @@ getClassesBuiltInExpr v vis
   | "neInt" `isPrefixOf` vname ||
     "neWord" `isPrefixOf` vname
   = binaryExpr "!=" vis
+  | "ltInt" `isPrefixOf` vname || "ltWord" `isPrefixOf` vname
+  = binaryExpr "<" vis
+  | "leInt" `isPrefixOf` vname || "leWord" `isPrefixOf` vname
+  = binaryExpr "<=" vis
+  | "gtInt" `isPrefixOf` vname || "gtWord" `isPrefixOf` vname
+  = binaryExpr ">" vis
+  | "geInt" `isPrefixOf` vname || "geWord" `isPrefixOf` vname
+  = binaryExpr ">=" vis
   | otherwise
   = error ("Unknown GHC.Classes binding " ++ vname)
   where vname = getOccString $ getName v 

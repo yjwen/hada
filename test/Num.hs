@@ -1,13 +1,27 @@
-module Num(plus, minus, mul, neg, abs_, sig, eq, neq,
-           plusW, minusW, mulW, negW, absW, sigW, eqW, neqW,
-           plus8, minus8, mul8, neg8, abs8, sig8, eq8, neq8,
-           plusW8, minusW8, mulW8, negW8, absW8, sigW8, eqW8, neqW8,
-           plus16, minus16, mul16, neg16, abs16, sig16, eq16, neq16,
-           plusW16, minusW16, mulW16, negW16, absW16, sigW16, eqW16, neqW16,
-           plus32, minus32, mul32, neg32, abs32, sig32, eq32, neq32,
-           plusW32, minusW32, mulW32, negW32, absW32, sigW32, eqW32, neqW32,
-           plus64, minus64, mul64, neg64, abs64, sig64, eq64, neq64,
-           plusW64, minusW64, mulW64, negW64, absW64, sigW64, eqW64, neqW64) where
+module Num(plus, plus8, plus16, plus32, plus64,
+           plusU, plusU8, plusU16, plusU32, plusU64,
+           minus, minus8, minus16, minus32, minus64,
+           minusU, minusU8, minusU16, minusU32, minusU64,
+           mul, mul8, mul16, mul32, mul64,
+           mulU, mulU8, mulU16, mulU32, mulU64,
+           neg, neg8, neg16, neg32, neg64,
+           negU, negU8, negU16, negU32, negU64,
+           abs_, abs8, abs16, abs32, abs64,
+           absU, absU8, absU16, absU32, absU64,
+           sig, sig8, sig16, sig32, sig64,
+           sigU, sigU8, sigU16, sigU32, sigU64,
+           eq, eq8, eq16, eq32, eq64,
+           eqU, eqU8, eqU16, eqU32, eqU64,
+           neq, neq8, neq16, neq32, neq64,
+           neqU, neqU8, neqU16, neqU32, neqU64,
+           lt, lt8, lt16, lt32, lt64,
+           ltU, ltU8, ltU16, ltU32, ltU64,
+           le, le8, le16, le32, le64,
+           leU, leU8, leU16, leU32, leU64,
+           gt, gt8, gt16, gt32, gt64,
+           gtU, gtU8, gtU16, gtU32, gtU64,
+           ge, ge8, ge16, ge32, ge64,
+           geU, geU8, geU16, geU32, geU64) where
 
 import Data.Int
 import Data.Word
@@ -30,23 +44,23 @@ abs_ = abs
 sig :: Int -> Int
 sig = signum
 
-plusW :: Word -> Word -> Word
-plusW = (+)
+plusU :: Word -> Word -> Word
+plusU = (+)
 
-minusW :: Word -> Word -> Word
-minusW = (-)
+minusU :: Word -> Word -> Word
+minusU = (-)
 
-mulW :: Word -> Word -> Word
-mulW = (*)
+mulU :: Word -> Word -> Word
+mulU = (*)
 
-negW :: Word -> Word
-negW = negate
+negU :: Word -> Word
+negU = negate
 
-absW :: Word -> Word
-absW = abs
+absU :: Word -> Word
+absU = abs
 
-sigW :: Word -> Word
-sigW = signum
+sigU :: Word -> Word
+sigU = signum
 
 plus8 :: Int8 -> Int8 -> Int8
 plus8 = (+)
@@ -66,23 +80,23 @@ abs8 = abs
 sig8 :: Int8 -> Int8
 sig8 = signum
 
-plusW8 :: Word8 -> Word8 -> Word8
-plusW8 = (+)
+plusU8 :: Word8 -> Word8 -> Word8
+plusU8 = (+)
 
-minusW8 :: Word8 -> Word8 -> Word8
-minusW8 = (-)
+minusU8 :: Word8 -> Word8 -> Word8
+minusU8 = (-)
 
-mulW8 :: Word8 -> Word8 -> Word8
-mulW8 = (*)
+mulU8 :: Word8 -> Word8 -> Word8
+mulU8 = (*)
 
-negW8 :: Word8 -> Word8
-negW8 = negate
+negU8 :: Word8 -> Word8
+negU8 = negate
 
-absW8 :: Word8 -> Word8
-absW8 = abs
+absU8 :: Word8 -> Word8
+absU8 = abs
 
-sigW8 :: Word8 -> Word8
-sigW8 = signum
+sigU8 :: Word8 -> Word8
+sigU8 = signum
 
 plus16 :: Int16 -> Int16 -> Int16
 plus16 = (+)
@@ -102,23 +116,23 @@ abs16 = abs
 sig16 :: Int16 -> Int16
 sig16 = signum
 
-plusW16 :: Word16 -> Word16 -> Word16
-plusW16 = (+)
+plusU16 :: Word16 -> Word16 -> Word16
+plusU16 = (+)
 
-minusW16 :: Word16 -> Word16 -> Word16
-minusW16 = (-)
+minusU16 :: Word16 -> Word16 -> Word16
+minusU16 = (-)
 
-mulW16 :: Word16 -> Word16 -> Word16
-mulW16 = (*)
+mulU16 :: Word16 -> Word16 -> Word16
+mulU16 = (*)
 
-negW16 :: Word16 -> Word16
-negW16 = negate
+negU16 :: Word16 -> Word16
+negU16 = negate
 
-absW16 :: Word16 -> Word16
-absW16 = abs
+absU16 :: Word16 -> Word16
+absU16 = abs
 
-sigW16 :: Word16 -> Word16
-sigW16 = signum
+sigU16 :: Word16 -> Word16
+sigU16 = signum
 
 plus32 :: Int32 -> Int32 -> Int32
 plus32 = (+)
@@ -138,23 +152,23 @@ abs32 = abs
 sig32 :: Int32 -> Int32
 sig32 = signum
 
-plusW32 :: Word32 -> Word32 -> Word32
-plusW32 = (+)
+plusU32 :: Word32 -> Word32 -> Word32
+plusU32 = (+)
 
-minusW32 :: Word32 -> Word32 -> Word32
-minusW32 = (-)
+minusU32 :: Word32 -> Word32 -> Word32
+minusU32 = (-)
 
-mulW32 :: Word32 -> Word32 -> Word32
-mulW32 = (*)
+mulU32 :: Word32 -> Word32 -> Word32
+mulU32 = (*)
 
-negW32 :: Word32 -> Word32
-negW32 = negate
+negU32 :: Word32 -> Word32
+negU32 = negate
 
-absW32 :: Word32 -> Word32
-absW32 = abs
+absU32 :: Word32 -> Word32
+absU32 = abs
 
-sigW32 :: Word32 -> Word32
-sigW32 = signum
+sigU32 :: Word32 -> Word32
+sigU32 = signum
 
 plus64 :: Int64 -> Int64 -> Int64
 plus64 = (+)
@@ -174,23 +188,23 @@ abs64 = abs
 sig64 :: Int64 -> Int64
 sig64 = signum
 
-plusW64 :: Word64 -> Word64 -> Word64
-plusW64 = (+)
+plusU64 :: Word64 -> Word64 -> Word64
+plusU64 = (+)
 
-minusW64 :: Word64 -> Word64 -> Word64
-minusW64 = (-)
+minusU64 :: Word64 -> Word64 -> Word64
+minusU64 = (-)
 
-mulW64 :: Word64 -> Word64 -> Word64
-mulW64 = (*)
+mulU64 :: Word64 -> Word64 -> Word64
+mulU64 = (*)
 
-negW64 :: Word64 -> Word64
-negW64 = negate
+negU64 :: Word64 -> Word64
+negU64 = negate
 
-absW64 :: Word64 -> Word64
-absW64 = abs
+absU64 :: Word64 -> Word64
+absU64 = abs
 
-sigW64 :: Word64 -> Word64
-sigW64 = signum
+sigU64 :: Word64 -> Word64
+sigU64 = signum
 
 eq :: Int -> Int -> Bool
 eq = (==)
@@ -207,20 +221,20 @@ eq32 = (==)
 eq64 :: Int64 -> Int64 -> Bool
 eq64 = (==)
 
-eqW :: Word -> Word -> Bool
-eqW = (==)
+eqU :: Word -> Word -> Bool
+eqU = (==)
 
-eqW8 :: Word8 -> Word8 -> Bool
-eqW8 = (==)
+eqU8 :: Word8 -> Word8 -> Bool
+eqU8 = (==)
 
-eqW16 :: Word16 -> Word16 -> Bool
-eqW16 = (==)
+eqU16 :: Word16 -> Word16 -> Bool
+eqU16 = (==)
 
-eqW32 :: Word32 -> Word32 -> Bool
-eqW32 = (==)
+eqU32 :: Word32 -> Word32 -> Bool
+eqU32 = (==)
 
-eqW64 :: Word64 -> Word64 -> Bool
-eqW64 = (==)
+eqU64 :: Word64 -> Word64 -> Bool
+eqU64 = (==)
 
 neq :: Int -> Int -> Bool
 neq = (==)
@@ -237,17 +251,137 @@ neq32 = (==)
 neq64 :: Int64 -> Int64 -> Bool
 neq64 = (==)
 
-neqW :: Word -> Word -> Bool
-neqW = (==)
+neqU :: Word -> Word -> Bool
+neqU = (==)
 
-neqW8 :: Word8 -> Word8 -> Bool
-neqW8 = (==)
+neqU8 :: Word8 -> Word8 -> Bool
+neqU8 = (==)
 
-neqW16 :: Word16 -> Word16 -> Bool
-neqW16 = (==)
+neqU16 :: Word16 -> Word16 -> Bool
+neqU16 = (==)
 
-neqW32 :: Word32 -> Word32 -> Bool
-neqW32 = (==)
+neqU32 :: Word32 -> Word32 -> Bool
+neqU32 = (==)
 
-neqW64 :: Word64 -> Word64 -> Bool
-neqW64 = (==)
+neqU64 :: Word64 -> Word64 -> Bool
+neqU64 = (==)
+
+lt :: Int -> Int -> Bool
+lt = (<)
+
+lt8 :: Int8 -> Int8 -> Bool
+lt8 = (<)
+
+lt16 :: Int16 -> Int16 -> Bool
+lt16 = (<)
+
+lt32 :: Int32 -> Int32 -> Bool
+lt32 = (<)
+
+lt64 :: Int64 -> Int64 -> Bool
+lt64 = (<)
+
+ltU :: Word -> Word -> Bool
+ltU = (<)
+
+ltU8 :: Word8 -> Word8 -> Bool
+ltU8 = (<)
+
+ltU16 :: Word16 -> Word16 -> Bool
+ltU16 = (<)
+
+ltU32 :: Word32 -> Word32 -> Bool
+ltU32 = (<)
+
+ltU64 :: Word64 -> Word64 -> Bool
+ltU64 = (<)
+
+le :: Int -> Int -> Bool
+le = (<=)
+
+le8 :: Int8 -> Int8 -> Bool
+le8 = (<=)
+
+le16 :: Int16 -> Int16 -> Bool
+le16 = (<=)
+
+le32 :: Int32 -> Int32 -> Bool
+le32 = (<=)
+
+le64 :: Int64 -> Int64 -> Bool
+le64 = (<=)
+
+leU :: Word -> Word -> Bool
+leU = (<=)
+
+leU8 :: Word8 -> Word8 -> Bool
+leU8 = (<=)
+
+leU16 :: Word16 -> Word16 -> Bool
+leU16 = (<=)
+
+leU32 :: Word32 -> Word32 -> Bool
+leU32 = (<=)
+
+leU64 :: Word64 -> Word64 -> Bool
+leU64 = (<=)
+
+gt :: Int -> Int -> Bool
+gt = (>)
+
+gt8 :: Int8 -> Int8 -> Bool
+gt8 = (>)
+
+gt16 :: Int16 -> Int16 -> Bool
+gt16 = (>)
+
+gt32 :: Int32 -> Int32 -> Bool
+gt32 = (>)
+
+gt64 :: Int64 -> Int64 -> Bool
+gt64 = (>)
+
+gtU :: Word -> Word -> Bool
+gtU = (>)
+
+gtU8 :: Word8 -> Word8 -> Bool
+gtU8 = (>)
+
+gtU16 :: Word16 -> Word16 -> Bool
+gtU16 = (>)
+
+gtU32 :: Word32 -> Word32 -> Bool
+gtU32 = (>)
+
+gtU64 :: Word64 -> Word64 -> Bool
+gtU64 = (>)
+
+ge :: Int -> Int -> Bool
+ge = (>=)
+
+ge8 :: Int8 -> Int8 -> Bool
+ge8 = (>=)
+
+ge16 :: Int16 -> Int16 -> Bool
+ge16 = (>=)
+
+ge32 :: Int32 -> Int32 -> Bool
+ge32 = (>=)
+
+ge64 :: Int64 -> Int64 -> Bool
+ge64 = (>=)
+
+geU :: Word -> Word -> Bool
+geU = (>=)
+
+geU8 :: Word8 -> Word8 -> Bool
+geU8 = (>=)
+
+geU16 :: Word16 -> Word16 -> Bool
+geU16 = (>=)
+
+geU32 :: Word32 -> Word32 -> Bool
+geU32 = (>=)
+
+geU64 :: Word64 -> Word64 -> Bool
+geU64 = (>=)
