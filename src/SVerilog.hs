@@ -17,6 +17,7 @@ import IdInfo (IdDetails(VanillaId), vanillaIdInfo)
 import FastString (FastString, mkFastString)
 
 import Data.List
+import ListX (decap, decapAny)
 
 import MyPpr -- For dumping
 
@@ -84,89 +85,74 @@ getStatement vo e vis =
 getVExpr :: CoreExpr -> [Var] -> SDoc
 getVExpr (App e args) vis = getVExpr e vis
 getVExpr (Var v) vis
-  | varIsInModule v "GHC.Num" ||
-    varIsInModule v "GHC.Int" ||
-    varIsInModule v "GHC.Word"
-  = getBuiltInExpr v vis
+  | Just (tname, fname) <- splitTypeFuncMaybe vname
+  = getBuiltInExpr tname fname vis
   | varIsInModule v "GHC.Classes"
-  = getClassesBuiltInExpr v vis
-  | otherwise
-  = ppr v
+  = error $ "Unknown application " ++ vname
+  where vname = getOccString $ varName v
+
 getVExpr (Lam b exp) vis = getVExpr exp vis
 getVExpr e vis = error ("Unexpected expression in getVExpr: " ++
                         (showSDocUnsafe $ myPprExpr e))
-                    
-getBuiltInExpr :: Var -> [Var] -> SDoc
-getBuiltInExpr v vis
-  | fname == "$c+" && isNum
-  = binaryExpr "+" vis
-  | fname == "$c-" && isNum
-  = binaryExpr "-" vis
-  | fname == "$c*" && isNum
-  = binaryExpr "*" vis
-  | fname == "$cnegate" && isNum
-  = unaryExpr "-" vis
-  | fname == "$cabs" && isNum
-  = if "$fNumInt" `isPrefixOf` cname
-    -- Int, Int8 ~ Int64
-    then funCall ("hada::abs" ++ (autoWidthStr $ drop 8 cname)) vis
-    -- Word, Word8 ~ Word64
-    else varExpr vis
-  | fname == "$csignum" && isNum
-  = if "$fNumInt" `isPrefixOf` cname
-    -- Int, Int8 ~ Int64
-    then funCall ("hada::signum" ++ (autoWidthStr $ drop 8 cname)) vis
-    -- Word, Word8 ~ Word64
-    else funCall ("hada::signumU" ++ (autoWidthStr $ drop 9 cname)) vis
-  | "eqInt" `isPrefixOf` vname ||
-    "eqWord" `isPrefixOf` vname
-  = binaryExpr "==" vis
-  | "neInt" `isPrefixOf` vname ||
-    "neWord" `isPrefixOf` vname
-  = binaryExpr "!=" vis
-  | "ltInt" `isPrefixOf` vname ||
-    "ltWord" `isPrefixOf` vname
-  = binaryExpr "<" vis
-  | "leInt" `isPrefixOf` vname ||
-    "leWord" `isPrefixOf` vname
-  = binaryExpr "<=" vis
-  | "gtInt" `isPrefixOf` vname ||
-    "gtWord" `isPrefixOf` vname
-  = binaryExpr ">" vis
-  | "geInt" `isPrefixOf` vname ||
-    "geWord" `isPrefixOf` vname
-  = binaryExpr ">=" vis
+
+-- | Try to retrieve type and function from a string
+-- Return Nothing if failed
+splitTypeFuncMaybe :: String -> Maybe (String, String)
+splitTypeFuncMaybe n
+  | Just (_, tail) <- decapAny ["$fNum", "$fBits"] n
+  -- Split a string of form like "$f[CNAME][TYPE]_$c[FUNC]", where
+  --  [CNAME] must be either "Num" or "Bits", [TYPE] must be "Int",
+  --  "Int8/16/32/34", "Word" or "Word8/16/32/64"
+  = case decapAny ["Int", "Word" ] tail of
+      Just (tname, tail1) ->
+        case decapAny ["8", "16", "32", "64", ""] tail1 of
+          Just (wname, tail2) ->
+            case decap "_$c" tail2 of
+              Just fname -> Just (tname ++ wname, fname)
+              otherwise -> Nothing
+          otherwise -> Nothing
+      otherwise -> Nothing
+  | Just (fname, tail) <- decapAny ["eq", "neq", "lt", "le", "gt", "ge"] n
+  -- Split a string of form like "[FUNC][TYPE]", where [FUNC] must be
+  -- one of the above list, and [TYPE] must be "Int", "Int8/16/32/64",
+  -- "Word" or "Word8/16/32/64"
+  = case decapAny ["Int", "Word"] tail of
+      Just (tname, tail1) ->
+        case elemIndex tail1 ["8", "16", "32", "64", ""] of
+          Just _ -> Just (tail, fname)
+          Nothing -> Nothing
+      Nothing -> Nothing
   | otherwise
-  = text "Unknown builtin"
-  where vname = getOccString $ getName v
-        (cname, fname') = break (== '_') vname
-        fname = drop 1 fname'
-        isNum = ("$fNumInt" `isPrefixOf` cname) || ("$fNumWord" `isPrefixOf` cname)
-        autoWidthStr str =  case str of
+  = Nothing
+
+getBuiltInExpr :: String -> String -> [Var] -> SDoc
+getBuiltInExpr tname fname vis
+  | fname == "+" = binaryExpr "+" vis
+  | fname == "-" = binaryExpr "-" vis
+  | fname == "*" = binaryExpr "*" vis
+  | fname == "negate" = unaryExpr "-" vis
+  | fname == "abs" = if "Int" `isPrefixOf` tname
+                     then funCall ("hada::abs" ++ (autoWidthStr $ drop 3 tname)) vis
+                     else varExpr vis
+  | fname == "signum" = if "Int" `isPrefixOf` tname
+                        then funCall ("hada::signum" ++ (autoWidthStr $ drop 3 tname)) vis
+                        else funCall ("hada::signumU" ++ (autoWidthStr $ drop 4 tname)) vis
+  | fname == "eq" = binaryExpr "==" vis
+  | fname == "ne" = binaryExpr "!=" vis
+  | fname == "lt" = binaryExpr "<" vis
+  | fname == "le" = binaryExpr "<=" vis
+  | fname == "gt" = binaryExpr ">" vis
+  | fname == "ge" = binaryExpr ">=" vis
+  | fname == ".&." = binaryExpr "&" vis
+  | fname == ".|." = binaryExpr "|" vis
+  | fname == "xor" = binaryExpr "^" vis
+  | fname == "complement" = unaryExpr "~" vis
+  | otherwise = error $ "Unknown builtin function " ++ fname
+  where autoWidthStr str =  case str of
                               [] -> if (maxBound::Word) == 0xFFFFFFFF
                                     then "32"
                                     else "64"
                               otherwise -> str
-
-getClassesBuiltInExpr :: Var -> [Var] -> SDoc
-getClassesBuiltInExpr v vis
-  | "eqInt" `isPrefixOf` vname ||
-    "eqWord" `isPrefixOf` vname
-  = binaryExpr "==" vis
-  | "neInt" `isPrefixOf` vname ||
-    "neWord" `isPrefixOf` vname
-  = binaryExpr "!=" vis
-  | "ltInt" `isPrefixOf` vname || "ltWord" `isPrefixOf` vname
-  = binaryExpr "<" vis
-  | "leInt" `isPrefixOf` vname || "leWord" `isPrefixOf` vname
-  = binaryExpr "<=" vis
-  | "gtInt" `isPrefixOf` vname || "gtWord" `isPrefixOf` vname
-  = binaryExpr ">" vis
-  | "geInt" `isPrefixOf` vname || "geWord" `isPrefixOf` vname
-  = binaryExpr ">=" vis
-  | otherwise
-  = error ("Unknown GHC.Classes binding " ++ vname)
-  where vname = getOccString $ getName v 
 
 binaryExpr :: String -> [Var] -> SDoc
 binaryExpr op (v0:v1:s) = ppr v0 <+> text op <+> ppr v1

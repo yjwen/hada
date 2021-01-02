@@ -1,8 +1,8 @@
 build_dir = build
 HADA-BIN = ../dist-newstyle/build/x86_64-linux/ghc-8.8.4/hada-0.1.0.0/x/hada/build/hada/hada
 
-NumBinds = plus minus mul neg abs_ sig eq neq lt le gt ge
-NumBinds += $(foreach d,U 8 U8 16 U16 32 U32 64 U64,plus$(d) minus$(d) mul$(d) neg$(d) abs$(d) sig$(d) eq$(d) neq$(d) lt$(d) le$(d) gt$(d) ge$(d))
+NumBinds = plus minus mul neg abs_ sig eq neq lt le gt ge band bor bxor bneg
+NumBinds += $(foreach d,U 8 U8 16 U16 32 U32 64 U64,plus$(d) minus$(d) mul$(d) neg$(d) abs$(d) sig$(d) eq$(d) neq$(d) lt$(d) le$(d) gt$(d) ge$(d) band$(d) bor$(d) bxor$(d) bneg$(d))
 VERILATOR ?= $(shell which verilator)
 
 ifeq ($(VERILATOR),)

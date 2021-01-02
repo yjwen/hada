@@ -21,10 +21,20 @@ module Num(plus, plus8, plus16, plus32, plus64,
            gt, gt8, gt16, gt32, gt64,
            gtU, gtU8, gtU16, gtU32, gtU64,
            ge, ge8, ge16, ge32, ge64,
-           geU, geU8, geU16, geU32, geU64) where
+           geU, geU8, geU16, geU32, geU64,
+           band, band8, band16, band32, band64,
+           bandU, bandU8, bandU16, bandU32, bandU64,
+           bor, bor8, bor16, bor32, bor64,
+           borU, borU8, borU16, borU32, borU64,
+           bxor, bxor8, bxor16, bxor32, bxor64,
+           bxorU, bxorU8, bxorU16, bxorU32, bxorU64,
+           bneg, bneg8, bneg16, bneg32, bneg64,
+           bnegU, bnegU8, bnegU16, bnegU32, bnegU64,
+           ) where
 
 import Data.Int
 import Data.Word
+import Data.Bits
 
 plus :: Int -> Int -> Int
 plus = (+)
@@ -385,3 +395,123 @@ geU32 = (>=)
 
 geU64 :: Word64 -> Word64 -> Bool
 geU64 = (>=)
+
+band :: Int -> Int -> Int
+band = (.&.)
+
+band8 :: Int8 -> Int8 -> Int8
+band8 = (.&.)
+
+band16 :: Int16 -> Int16 -> Int16
+band16 = (.&.)
+
+band32 :: Int32 -> Int32 -> Int32
+band32 = (.&.)
+
+band64 :: Int64 -> Int64 -> Int64
+band64 = (.&.)
+
+bandU :: Word -> Word -> Word
+bandU = (.&.)
+
+bandU8 :: Word8 -> Word8 -> Word8
+bandU8 = (.&.)
+
+bandU16 :: Word16 -> Word16 -> Word16
+bandU16 = (.&.)
+
+bandU32 :: Word32 -> Word32 -> Word32
+bandU32 = (.&.)
+
+bandU64 :: Word64 -> Word64 -> Word64
+bandU64 = (.&.)
+
+bor :: Int -> Int -> Int
+bor = (.|.)
+
+bor8 :: Int8 -> Int8 -> Int8
+bor8 = (.|.)
+
+bor16 :: Int16 -> Int16 -> Int16
+bor16 = (.|.)
+
+bor32 :: Int32 -> Int32 -> Int32
+bor32 = (.|.)
+
+bor64 :: Int64 -> Int64 -> Int64
+bor64 = (.|.)
+
+borU :: Word -> Word -> Word
+borU = (.|.)
+
+borU8 :: Word8 -> Word8 -> Word8
+borU8 = (.|.)
+
+borU16 :: Word16 -> Word16 -> Word16
+borU16 = (.|.)
+
+borU32 :: Word32 -> Word32 -> Word32
+borU32 = (.|.)
+
+borU64 :: Word64 -> Word64 -> Word64
+borU64 = (.|.)
+
+bxor :: Int -> Int -> Int
+bxor = xor
+
+bxor8 :: Int8 -> Int8 -> Int8
+bxor8 = xor
+
+bxor16 :: Int16 -> Int16 -> Int16
+bxor16 = xor
+
+bxor32 :: Int32 -> Int32 -> Int32
+bxor32 = xor
+
+bxor64 :: Int64 -> Int64 -> Int64
+bxor64 = xor
+
+bxorU :: Word -> Word -> Word
+bxorU = xor
+
+bxorU8 :: Word8 -> Word8 -> Word8
+bxorU8 = xor
+
+bxorU16 :: Word16 -> Word16 -> Word16
+bxorU16 = xor
+
+bxorU32 :: Word32 -> Word32 -> Word32
+bxorU32 = xor
+
+bxorU64 :: Word64 -> Word64 -> Word64
+bxorU64 = xor
+
+bneg :: Int -> Int
+bneg = complement
+
+bneg8 :: Int8 -> Int8
+bneg8 = complement
+
+bneg16 :: Int16 -> Int16
+bneg16 = complement
+
+bneg32 :: Int32 -> Int32
+bneg32 = complement
+
+bneg64 :: Int64 -> Int64
+bneg64 = complement
+
+bnegU :: Word -> Word
+bnegU = complement
+
+bnegU8 :: Word8 -> Word8
+bnegU8 = complement
+
+bnegU16 :: Word16 -> Word16
+bnegU16 = complement
+
+bnegU32 :: Word32 -> Word32
+bnegU32 = complement
+
+bnegU64 :: Word64 -> Word64
+bnegU64 = complement

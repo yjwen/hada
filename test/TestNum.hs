@@ -125,6 +125,46 @@ import qualified WgeU8
 import qualified WgeU16
 import qualified WgeU32
 import qualified WgeU64
+import qualified Wband
+import qualified Wband8
+import qualified Wband16
+import qualified Wband32
+import qualified Wband64
+import qualified WbandU
+import qualified WbandU8
+import qualified WbandU16
+import qualified WbandU32
+import qualified WbandU64
+import qualified Wbor
+import qualified Wbor8
+import qualified Wbor16
+import qualified Wbor32
+import qualified Wbor64
+import qualified WborU
+import qualified WborU8
+import qualified WborU16
+import qualified WborU32
+import qualified WborU64
+import qualified Wbxor
+import qualified Wbxor8
+import qualified Wbxor16
+import qualified Wbxor32
+import qualified Wbxor64
+import qualified WbxorU
+import qualified WbxorU8
+import qualified WbxorU16
+import qualified WbxorU32
+import qualified WbxorU64
+import qualified Wbneg
+import qualified Wbneg8
+import qualified Wbneg16
+import qualified Wbneg32
+import qualified Wbneg64
+import qualified WbnegU
+import qualified WbnegU8
+import qualified WbnegU16
+import qualified WbnegU32
+import qualified WbnegU64
 
 
 repeatedTest :: IO (Maybe String)  -> Test
@@ -254,6 +294,46 @@ numTests = (TestList . map (\(name, test) -> TestLabel name $ repeatedTest test)
            , ("geU16", testNum geU16 WgeU16.geU16)
            , ("geU32", testNum geU32 WgeU32.geU32)
            , ("geU64", testNum geU64 WgeU64.geU64)
+           , ("band", testNum band Wband.band)
+           , ("band8", testNum band8 Wband8.band8)
+           , ("band16", testNum band16 Wband16.band16)
+           , ("band32", testNum band32 Wband32.band32)
+           , ("band64", testNum band64 Wband64.band64)
+           , ("bandU", testNum bandU WbandU.bandU)
+           , ("bandU8", testNum bandU8 WbandU8.bandU8)
+           , ("bandU16", testNum bandU16 WbandU16.bandU16)
+           , ("bandU32", testNum bandU32 WbandU32.bandU32)
+           , ("bandU64", testNum bandU64 WbandU64.bandU64)
+           , ("bor", testNum bor Wbor.bor)
+           , ("bor8", testNum bor8 Wbor8.bor8)
+           , ("bor16", testNum bor16 Wbor16.bor16)
+           , ("bor32", testNum bor32 Wbor32.bor32)
+           , ("bor64", testNum bor64 Wbor64.bor64)
+           , ("borU", testNum borU WborU.borU)
+           , ("borU8", testNum borU8 WborU8.borU8)
+           , ("borU16", testNum borU16 WborU16.borU16)
+           , ("borU32", testNum borU32 WborU32.borU32)
+           , ("borU64", testNum borU64 WborU64.borU64)
+           , ("bxor", testNum bxor Wbxor.bxor)
+           , ("bxor8", testNum bxor8 Wbxor8.bxor8)
+           , ("bxor16", testNum bxor16 Wbxor16.bxor16)
+           , ("bxor32", testNum bxor32 Wbxor32.bxor32)
+           , ("bxor64", testNum bxor64 Wbxor64.bxor64)
+           , ("bxorU", testNum bxorU WbxorU.bxorU)
+           , ("bxorU8", testNum bxorU8 WbxorU8.bxorU8)
+           , ("bxorU16", testNum bxorU16 WbxorU16.bxorU16)
+           , ("bxorU32", testNum bxorU32 WbxorU32.bxorU32)
+           , ("bxorU64", testNum bxorU64 WbxorU64.bxorU64)
+           , ("bneg", testNum1 bneg Wbneg.bneg)
+           , ("bneg8", testNum1 bneg8 Wbneg8.bneg8)
+           , ("bneg16", testNum1 bneg16 Wbneg16.bneg16)
+           , ("bneg32", testNum1 bneg32 Wbneg32.bneg32)
+           , ("bneg64", testNum1 bneg64 Wbneg64.bneg64)
+           , ("bnegU", testNum1 bnegU WbnegU.bnegU)
+           , ("bnegU8", testNum1 bnegU8 WbnegU8.bnegU8)
+           , ("bnegU16", testNum1 bnegU16 WbnegU16.bnegU16)
+           , ("bnegU32", testNum1 bnegU32 WbnegU32.bnegU32)
+           , ("bnegU64", testNum1 bnegU64 WbnegU64.bnegU64)
            ]
 
 -- | Compare verilated binary function with its origin, return Nothing
