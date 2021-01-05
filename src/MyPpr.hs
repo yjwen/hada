@@ -3,7 +3,8 @@ import Prelude hiding ((<>))
 import HscTypes (mg_binds, ModGuts)
 import Name(Name, pprNameDefnLoc)
 import CoreSyn(Bind(NonRec, Rec), CoreBind,
-               Expr(Var, Lit, App, Lam, Let, Case, Cast, Tick, Type, Coercion))
+               Expr(Var, Lit, App, Lam, Let, Case, Cast, Tick, Type, Coercion),
+               Alt)
 -- import Var(Var, varName, varUnique, varType)
 import Var
 import Id
@@ -43,16 +44,19 @@ myPprId id = ppr [isImplicitId id,
 
 myPprExpr :: Expr Var -> SDoc
 myPprExpr e = case e of
-                Var v -> text "Var" <+> (parens (myPprVar v))
-                Lit literal -> text "Lit" <+> (ppr literal)
-                App e args -> text "App" <+> parens (myPprExpr e) <+> (myPprExpr args)
-                Lam b e -> text "Lam" <+> parens (ppr b) <+> (myPprExpr e)
-                Let b e -> text "Let"
-                Case e b t alts -> text "Case"
-                Cast e c -> text "Cast"
-                Tick t e -> text "Tick"
-                Type t -> text "Type" <+> ppr t
-                Coercion c -> text "Coercion"
+                Var v -> parens (text "Var" <+> ppr v)
+                Lit literal -> parens (text "Lit" <+> ppr literal)
+                App e arg -> parens (text "App" <+> myPprExpr e <+> myPprExpr arg)
+                Lam b e -> parens (text "Lam" <+> ppr b <+> myPprExpr e)
+                Let b e -> parens (text "Let")
+                Case e b t alts -> parens (text "Case" <+> myPprExpr e <+> ppr b <+> ppr t <+> hsep (map myPprAlt alts))
+                Cast e c -> parens (text "Cast")
+                Tick t e -> parens (text "Tick")
+                Type t -> parens (text "Type" <+> ppr t)
+                Coercion c -> parens (text "Coercion")
+
+myPprAlt :: (Alt Var -> SDoc)
+myPprAlt (altcon, binds, expr) = parens (ppr altcon <+> parens (hsep (map ppr binds)) <+> myPprExpr expr)
 
 
 myPprBind :: CoreBind -> SDoc

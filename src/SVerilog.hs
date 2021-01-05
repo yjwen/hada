@@ -87,7 +87,7 @@ getVExpr (App e args) vis = getVExpr e vis
 getVExpr (Var v) vis
   | Just (tname, fname) <- splitTypeFuncMaybe vname
   = getBuiltInExpr tname fname vis
-  | varIsInModule v "GHC.Classes"
+  | otherwise
   = error $ "Unknown application " ++ vname
   where vname = getOccString $ varName v
 
