@@ -17,7 +17,7 @@ import IdInfo (IdDetails(VanillaId), vanillaIdInfo)
 import FastString (FastString, mkFastString)
 
 import Data.List
-import ListX (decap, decapAny)
+import ListX (stripAnyPrefix)
 
 import MyPpr -- For dumping
 
@@ -118,24 +118,24 @@ getVExpr e vis = error ("Unexpected expression in getVExpr: " ++
 -- Return Nothing if failed
 splitTypeFuncMaybe :: String -> Maybe (String, String)
 splitTypeFuncMaybe n
-  | Just (_, tail) <- decapAny ["$fNum", "$fBits"] n
+  | Just (_, tail) <- stripAnyPrefix ["$fNum", "$fBits"] n
   -- Split a string of form like "$f[CNAME][TYPE]_$c[FUNC]", where
   --  [CNAME] must be either "Num" or "Bits", [TYPE] must be "Int",
   --  "Int8/16/32/34", "Word" or "Word8/16/32/64"
-  = case decapAny ["Int", "Word" ] tail of
+  = case stripAnyPrefix ["Int", "Word" ] tail of
       Just (tname, tail1) ->
-        case decapAny ["8", "16", "32", "64", ""] tail1 of
+        case stripAnyPrefix ["8", "16", "32", "64", ""] tail1 of
           Just (wname, tail2) ->
-            case decap "_$c" tail2 of
+            case stripPrefix "_$c" tail2 of
               Just fname -> Just (tname ++ wname, fname)
               otherwise -> Nothing
           otherwise -> Nothing
       otherwise -> Nothing
-  | Just (fname, tail) <- decapAny ["eq", "neq", "lt", "le", "gt", "ge"] n
+  | Just (fname, tail) <- stripAnyPrefix ["eq", "neq", "lt", "le", "gt", "ge"] n
   -- Split a string of form like "[FUNC][TYPE]", where [FUNC] must be
   -- one of the above list, and [TYPE] must be "Int", "Int8/16/32/64",
   -- "Word" or "Word8/16/32/64"
-  = case decapAny ["Int", "Word"] tail of
+  = case stripAnyPrefix ["Int", "Word"] tail of
       Just (tname, tail1) ->
         case elemIndex tail1 ["8", "16", "32", "64", ""] of
           Just _ -> Just (tail, fname)
