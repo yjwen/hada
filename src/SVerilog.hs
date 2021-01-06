@@ -38,7 +38,7 @@ toVModule b e =
               parens (vcat $ punctuate (text ", ")  ((outputDef vo):(map inputDef vis))) <> semi
               $+$
               -- Body
-              nest 2 (getStatement vo e vis)
+              nest 2 (getStatements [(vo, e)] vis empty)
               $+$
               text "endmodule")
             , vo)
@@ -76,11 +76,30 @@ getExprVar (Var v) = v
 getExprVar (Type t) = getTyVar "Cannot get TyVar" t
 
 
-getStatement :: Var -> CoreExpr -> [Var] -> SDoc
-getStatement vo e vis =
+-- | getStatements binds vis doc convert all binds to SVerilog
+-- statements, append the statements to doc and return. vis are primary input vars.
+getStatements :: [(Var, CoreExpr)] -> [Var] -> SDoc -> SDoc
+getStatements ((v, e):binds) vis doc
+  = getStatements (filter ((/= v) . fst) newBinds) vis newDoc
+  where (newBinds, newDoc) = getBindStatement v e vis binds doc
+getStatements [] _ doc = doc -- No more binds to convert, return doc
+
+getBindStatement ::
+  Var -> -- Bind var
+  CoreExpr -> -- Bind expression
+  [Var] -> -- Auto vars
+  [(Var, CoreExpr)] -> -- Existing other binds
+  SDoc -> -- Existing code
+  ([(Var, CoreExpr)], SDoc) -- New binds with this expression's
+                            -- dependencies, and new code with this
+                            -- bind's.
+getBindStatement v e vis binds doc =
   -- Assuming the binder can always be implemented by combinational
   -- logic
-  text "always_comb" <+> ppr vo <+> text "=" <+> getVExpr e vis <> semi
+  (binds, -- No new binds
+   text "always_comb" <+> ppr v <+> text "=" <+> getVExpr e vis <> semi
+   $+$
+   doc)
 
 getVExpr :: CoreExpr -> [Var] -> SDoc
 getVExpr (App e args) vis = getVExpr e vis
