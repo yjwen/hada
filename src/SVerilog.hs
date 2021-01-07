@@ -25,6 +25,21 @@ toSV :: CoreBind -> IO (SDoc, Var)
 toSV (NonRec b e) = toVModule b e
 toSV (Rec bs) = error "Recursive bindings"
 
+-- | A job is to convert a haskell syntax to SV statement
+data Job = BindJob Var CoreExpr [Var]
+
+instance Eq Job where
+  (==) j0 j1
+    | (BindJob v0 e0 vis0) <- j0,
+      (BindJob v1 e1 vis1) <- j1
+    = v0 == v1
+    | otherwise
+    = False
+
+type Progress = ( [Job] -- Jobs undone
+                , SDoc -- SV statements done
+                )
+
 -- Return the translated Verilog SDoc, and the created output var for
 -- wrapper files
 toVModule :: CoreBndr -> CoreExpr -> IO (SDoc, Var)
@@ -38,7 +53,7 @@ toVModule b e =
               parens (vcat $ punctuate (text ", ")  ((outputDef vo):(map inputDef vis))) <> semi
               $+$
               -- Body
-              nest 2 (getStatements [(vo, e)] vis empty)
+              nest 2 (doAllJobs [] ([BindJob vo e vis], empty))
               $+$
               text "endmodule")
             , vo)
@@ -75,31 +90,24 @@ getExprVar :: CoreExpr -> Var
 getExprVar (Var v) = v
 getExprVar (Type t) = getTyVar "Cannot get TyVar" t
 
+-- | Do all jobs in progress and return the resulted SV statements
+doAllJobs :: [Job] -> Progress -> SDoc
+doAllJobs doneJobs ((j:jobs), doc) 
+  | elem j doneJobs = doAllJobs doneJobs (jobs, doc) -- j already done. Search more
+  | otherwise = doAllJobs (j:doneJobs) $ doJob j (jobs, doc)
+doAllJobs _ ([], doc) = doc -- No job remain. All done
 
--- | getStatements binds vis doc convert all binds to SVerilog
--- statements, append the statements to doc and return. vis are primary input vars.
-getStatements :: [(Var, CoreExpr)] -> [Var] -> SDoc -> SDoc
-getStatements ((v, e):binds) vis doc
-  = getStatements (filter ((/= v) . fst) newBinds) vis newDoc
-  where (newBinds, newDoc) = getBindStatement v e vis binds doc
-getStatements [] _ doc = doc -- No more binds to convert, return doc
-
-getBindStatement ::
-  Var -> -- Bind var
-  CoreExpr -> -- Bind expression
-  [Var] -> -- Auto vars
-  [(Var, CoreExpr)] -> -- Existing other binds
-  SDoc -> -- Existing code
-  ([(Var, CoreExpr)], SDoc) -- New binds with this expression's
-                            -- dependencies, and new code with this
-                            -- bind's.
-getBindStatement v e vis binds doc =
+-- | Do one job and update progress. SV statements will be
+-- updated. Undone jobs may be updated as well if more jobs are
+-- discovered when doing this job.
+doJob :: Job -> Progress -> Progress
+doJob (BindJob v e vis)
+  = addStmt (text "always_comb" <+> ppr v <+> text "=" <+> getVExpr e vis <> semi)
   -- Assuming the binder can always be implemented by combinational
   -- logic
-  (binds, -- No new binds
-   text "always_comb" <+> ppr v <+> text "=" <+> getVExpr e vis <> semi
-   $+$
-   doc)
+
+addStmt :: SDoc -> Progress -> Progress
+addStmt stmt (j, stmtDone) = (j, stmt $+$ stmtDone)
 
 getVExpr :: CoreExpr -> [Var] -> SDoc
 getVExpr (App e args) vis = getVExpr e vis
