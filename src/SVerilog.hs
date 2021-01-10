@@ -18,6 +18,7 @@ import FastString (FastString, mkFastString)
 
 import Data.List
 import ListX (stripAnyPrefix)
+import SDocFunc
 
 import MyPpr -- For dumping
 
@@ -26,12 +27,12 @@ toSV (NonRec b e) = toVModule b e
 toSV (Rec bs) = error "Recursive bindings"
 
 -- | A job is to convert a haskell syntax to SV statement
-data Job = BindJob Var CoreExpr [Var]
+data Job = BindJob Var CoreExpr
 
 instance Eq Job where
   (==) j0 j1
-    | (BindJob v0 e0 vis0) <- j0,
-      (BindJob v1 e1 vis1) <- j1
+    | (BindJob v0 e0) <- j0,
+      (BindJob v1 e1) <- j1
     = v0 == v1
     | otherwise
     = False
@@ -53,7 +54,7 @@ toVModule b e =
               parens (vcat $ punctuate (text ", ")  ((outputDef vo):(map inputDef vis))) <> semi
               $+$
               -- Body
-              nest 2 (doAllJobs [] ([BindJob vo e vis], empty))
+              nest 2 (doAllJobs [] ([BindJob vo e], empty))
               $+$
               text "endmodule")
             , vo)
@@ -76,20 +77,6 @@ mkAutoVar vname vtype = do n <- newUniqueName vname
                            return $ mkLocalVar VanillaId n vtype vanillaIdInfo
 
 
--- | Get those vars presented in the expression and argument
-getExplicitInputVars :: CoreExpr -> [Var] -> [Var]
-getExplicitInputVars (App e (Var a)) args = a:args
-getExplicitInputVars (App e _) args = error "Unkown argument in getExplicitInputVars"
--- | Assuming v is an synthesizable expression
-getExplicitInputVars (Var v) args = args
-getExplicitInputVars e _ = error "Unexpected expression in getExplicitInputVars: "
-
--- | Trying to convert an core expression to a variable. Expecting the
--- expression itself being a (Var v) or (Type t)
-getExprVar :: CoreExpr -> Var
-getExprVar (Var v) = v
-getExprVar (Type t) = getTyVar "Cannot get TyVar" t
-
 -- | Do all jobs in progress and return the resulted SV statements
 doAllJobs :: [Job] -> Progress -> SDoc
 doAllJobs doneJobs ((j:jobs), doc) 
@@ -101,26 +88,26 @@ doAllJobs _ ([], doc) = doc -- No job remain. All done
 -- updated. Undone jobs may be updated as well if more jobs are
 -- discovered when doing this job.
 doJob :: Job -> Progress -> Progress
-doJob (BindJob v e vis)
-  = addStmt (text "always_comb" <+> ppr v <+> text "=" <+> getVExpr e vis <> semi)
+doJob (BindJob v e)
+  = addStmt (text "always_comb" <+> ppr v <+> text "=" <+> (ppr $ getVExpr e) <> semi)
   -- Assuming the binder can always be implemented by combinational
   -- logic
 
 addStmt :: SDoc -> Progress -> Progress
 addStmt stmt (j, stmtDone) = (j, stmt $+$ stmtDone)
 
-getVExpr :: CoreExpr -> [Var] -> SDoc
-getVExpr (App e args) vis = getVExpr e vis
-getVExpr (Var v) vis
+getVExpr :: CoreExpr -> SDocFunc
+getVExpr (App e arg) = apply (getVExpr e) (ppr $ getVExpr arg)
+getVExpr (Var v)
   | Just (tname, fname) <- splitTypeFuncMaybe vname
-  = getBuiltInExpr tname fname vis
+  = getBuiltInExpr tname fname
   | otherwise
-  = error $ "Unknown application " ++ vname
+  = SDocFunc [Body $ ppr v]
   where vname = getOccString $ varName v
 
-getVExpr (Lam b exp) vis = getVExpr exp vis
-getVExpr e vis = error ("Unexpected expression in getVExpr: " ++
-                        (showSDocUnsafe $ myPprExpr e))
+getVExpr (Lam b exp) = getVExpr exp
+getVExpr e = error ("Unexpected expression in getVExpr: " ++
+                     (showSDocUnsafe $ myPprExpr e))
 
 -- | Try to retrieve type and function from a string
 -- Return Nothing if failed
@@ -152,28 +139,28 @@ splitTypeFuncMaybe n
   | otherwise
   = Nothing
 
-getBuiltInExpr :: String -> String -> [Var] -> SDoc
-getBuiltInExpr tname fname vis
-  | fname == "+" = binaryExpr "+" vis
-  | fname == "-" = binaryExpr "-" vis
-  | fname == "*" = binaryExpr "*" vis
-  | fname == "negate" = unaryExpr "-" vis
+getBuiltInExpr :: String -> String -> SDocFunc
+getBuiltInExpr tname fname
+  | fname == "+" = binaryExpr "+"
+  | fname == "-" = binaryExpr "-"
+  | fname == "*" = binaryExpr "*"
+  | fname == "negate" = unaryExpr "-"
   | fname == "abs" = if "Int" `isPrefixOf` tname
-                     then funCall ("hada::abs" ++ (autoWidthStr $ drop 3 tname)) vis
-                     else varExpr vis
+                     then funCall ("hada::abs" ++ (autoWidthStr $ drop 3 tname))
+                     else varExpr
   | fname == "signum" = if "Int" `isPrefixOf` tname
-                        then funCall ("hada::signum" ++ (autoWidthStr $ drop 3 tname)) vis
-                        else funCall ("hada::signumU" ++ (autoWidthStr $ drop 4 tname)) vis
-  | fname == "eq" = binaryExpr "==" vis
-  | fname == "ne" = binaryExpr "!=" vis
-  | fname == "lt" = binaryExpr "<" vis
-  | fname == "le" = binaryExpr "<=" vis
-  | fname == "gt" = binaryExpr ">" vis
-  | fname == "ge" = binaryExpr ">=" vis
-  | fname == ".&." = binaryExpr "&" vis
-  | fname == ".|." = binaryExpr "|" vis
-  | fname == "xor" = binaryExpr "^" vis
-  | fname == "complement" = unaryExpr "~" vis
+                        then funCall ("hada::signum" ++ (autoWidthStr $ drop 3 tname))
+                        else funCall ("hada::signumU" ++ (autoWidthStr $ drop 4 tname))
+  | fname == "eq" = binaryExpr "=="
+  | fname == "ne" = binaryExpr "!="
+  | fname == "lt" = binaryExpr "<"
+  | fname == "le" = binaryExpr "<="
+  | fname == "gt" = binaryExpr ">"
+  | fname == "ge" = binaryExpr ">="
+  | fname == ".&." = binaryExpr "&"
+  | fname == ".|." = binaryExpr "|"
+  | fname == "xor" = binaryExpr "^"
+  | fname == "complement" = unaryExpr "~"
   | otherwise = error $ "Unknown builtin function " ++ fname
   where autoWidthStr str =  case str of
                               [] -> if (maxBound::Word) == 0xFFFFFFFF
@@ -181,16 +168,14 @@ getBuiltInExpr tname fname vis
                                     else "64"
                               otherwise -> str
 
-binaryExpr :: String -> [Var] -> SDoc
-binaryExpr op (v0:v1:s) = ppr v0 <+> text op <+> ppr v1
-binaryExpr _ _ = error "Insufficient operands for built-in binary expression"
+binaryExpr :: String -> SDocFunc
+binaryExpr op = SDocFunc ((Hole 0) : (Body (space <> text op <> space)) : (Hole 1) : [])
 
-unaryExpr :: String -> [Var] -> SDoc
-unaryExpr op vs = text op <> varExpr vs
+unaryExpr :: String -> SDocFunc
+unaryExpr op = SDocFunc ((Body (text op)) : (Hole 0) : [])
 
-varExpr :: [Var] -> SDoc
-varExpr (v:vs) = ppr v
-varExpr _ = error "Insufficient operand" 
-                                   
-funCall :: String -> [Var] -> SDoc
-funCall fName vs = text fName <> parens (pprWithCommas ppr vs)
+varExpr :: SDocFunc
+varExpr = SDocFunc (Hole 0 : [])
+
+funCall :: String -> SDocFunc
+funCall fName = SDocFunc (Body (text fName <> lparen) : Variadic [] : Body rparen : [])
