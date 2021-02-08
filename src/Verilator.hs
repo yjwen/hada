@@ -33,20 +33,23 @@ cppDriver (NonRec b e) vo
                          parens (vcat $
                                  punctuate (text ", ") $
                                  map
-                                  (\v -> cppr (synType $ varType v) <+> ppr v)
+                                  (\v -> cppr (synType $ varType v) <+> cvar v)
                                   inputVars)) (
                -- The Body
                -- First, new the module instance
                (vTopName <+> text "*top = new" <+> vTopName <> semi) $$
                vcat (map
-                      (\v -> text "top" <> text "->" <> ppr v <+> char '=' <+> ppr v <> semi)
+                      (\v -> text "top" <> text "->" <> cvar v <+> char '=' <+> cvar v <> semi)
                       inputVars) $$
                text "top->eval();" $$
-               oType <+> ppr vo <+> char '=' <+> text "top->" <> ppr vo <> semi $$
+               oType <+> cvar vo <+> char '=' <+> text "top->" <> cvar vo <> semi $$
                text "top->final();" $$
                text "delete top" <> semi $$
-               (text "return" <+> ppr vo <> semi)
+               (text "return" <+> cvar vo <> semi)
                ))))
+
+cvar :: Var -> SDoc
+cvar v = (text . getOccString . varName) v <> char '_' <> (ppr . varUnique) v
 
 -- Write down the type in C++
 ctype :: Type -> SDoc

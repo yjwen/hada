@@ -29,7 +29,7 @@ module Num(plus, plus8, plus16, plus32, plus64,
            bxor, bxor8, bxor16, bxor32, bxor64,
            bxorU, bxorU8, bxorU16, bxorU32, bxorU64,
            bneg, bneg8, bneg16, bneg32, bneg64,
-           bnegU, bnegU8, bnegU16, bnegU32, bnegU64,
+           bnegU, bnegU8, bnegU16, bnegU32, bnegU64
            ) where
 
 import Data.Int

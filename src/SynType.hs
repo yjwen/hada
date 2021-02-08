@@ -30,7 +30,8 @@ synTyConApp :: TyCon -> [Type] -> SynType
 synTyConApp con ts
   | nameIsInModule tn "GHC.Types" || -- Built-in types in GHC.Types
     nameIsInModule tn "GHC.Int" ||
-    nameIsInModule tn "GHC.Word"
+    nameIsInModule tn "GHC.Word" ||
+    nameIsInModule tn "GHC.Prim"
   = builtinType $ getOccString con
   where tn = tyConName con
 
@@ -51,6 +52,8 @@ builtinType n
   | n == "Word32" = SynInt QByte False
   | n == "Word64" = SynInt OByte False
   | n == "Bool" = SynBit
+  | n == "Int#" = SynInt MachineInt True
+  | n == "Word#" = SynInt MachineInt False
   | otherwise = error ("Unknown builtin type: " ++ n)
 
 signess True = empty

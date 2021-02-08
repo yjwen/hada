@@ -1,5 +1,8 @@
-module SDocFunc(SDocFunc(SDocFunc), SDocSeg(Body, Hole, Variadic), apply) where
-
+module SDocFunc( SDocFunc(SDocFunc), SDocSeg(Body, Hole, Variadic)
+               , apply
+               , binarySDocFunc, unarySDocFunc, bypassSDocFunc, funCallSDocFunc
+               ) where
+import Prelude hiding ((<>))
 import Data.Word
 import Outputable
 
@@ -30,3 +33,16 @@ apply (SDocFunc segs) doc = SDocFunc $ map (updateSeg doc) segs
 
 instance Outputable SDocFunc where
   ppr (SDocFunc segs) = cat $ map pprSeg segs
+
+binarySDocFunc :: String -> SDocFunc
+binarySDocFunc op = SDocFunc ((Hole 0) : (Body (space <> text op <> space)) : (Hole 1) : [])
+
+unarySDocFunc :: String -> SDocFunc
+unarySDocFunc op = SDocFunc ((Body (text op)) : (Hole 0) : [])
+
+bypassSDocFunc :: SDocFunc
+bypassSDocFunc = SDocFunc (Hole 0 : [])
+
+funCallSDocFunc :: String -> SDocFunc
+funCallSDocFunc fName = SDocFunc (Body (text fName <> lparen) : Variadic [] : Body rparen : [])
+

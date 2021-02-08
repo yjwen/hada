@@ -4,35 +4,38 @@ import Prelude hiding ((<>))
 import MyPpr
 import Syn (collectInputVars)
 import SynType (synType)
-import Util (varIsInModule)
+import Util (nameModuleStringMaybe)
 import Outputable
 import CoreSyn
-import Name (Name, nameModule, getOccString, getName, mkSystemVarName)
+import Name (Name, getOccString, getName, mkSystemVarName, nameUnique, NamedThing)
 import Module (moduleName, moduleNameString)
-import Var (varName, varType, Var, mkLocalVar)
+import Var (varName, varType, varUnique, Var, mkLocalVar, isLocalVar, isCoVar)
 import Type (Type(..), splitFunTys, getTyVar)
 import TyCon
 import UniqSupply (UniqSM, initUs_, mkSplitUniqSupply, getUniqueM)
 import IdInfo (IdDetails(VanillaId), vanillaIdInfo)
 import FastString (FastString, mkFastString)
+import Literal
 
 import Data.List
 import ListX (stripAnyPrefix)
 import SDocFunc
-
-import MyPpr -- For dumping
 
 toSV :: CoreBind -> IO (SDoc, Var)
 toSV (NonRec b e) = toVModule b e
 toSV (Rec bs) = error "Recursive bindings"
 
 -- | A job is to convert a haskell syntax to SV statement
-data Job = BindJob Var CoreExpr
+data Job = BindJob [Var] SDocFunc CoreExpr
+           -- For printing a bind of vars to expression, optionally
+           -- wrapped by a SDocFunc
+         | DefJob Var
+           
 
 instance Eq Job where
   (==) j0 j1
-    | (BindJob v0 e0) <- j0,
-      (BindJob v1 e1) <- j1
+    | (BindJob v0 df0 e0) <- j0,
+      (BindJob v1 df1 e1) <- j1
     = v0 == v1
     | otherwise
     = False
@@ -54,19 +57,21 @@ toVModule b e =
               parens (vcat $ punctuate (text ", ")  ((outputDef vo):(map inputDef vis))) <> semi
               $+$
               -- Body
-              nest 2 (doAllJobs [] ([BindJob vo e], empty))
+              nest 2 (doAllJobs [] ([BindJob [vo] bypassSDocFunc e], empty))
               $+$
               text "endmodule")
             , vo)
 
 -- | Generate the output port definition
 outputDef :: Var -> SDoc
-outputDef v = text "output" <+> (ppr . synType . varType)  v <+> (ppr v)
+outputDef v = text "output" <+> varDef v <+> varVId v
 
 -- | Generate the input port definition
 inputDef :: Var -> SDoc
-inputDef v = text "input" <+> (ppr . synType . varType) v <+> (ppr v)
+inputDef v = text "input" <+> varDef v <+> varVId v
 
+varDef :: Var -> SDoc
+varDef = ppr . synType . varType
 
 newUniqueName :: FastString -> UniqSM Name
 newUniqueName str = do u <- getUniqueM
@@ -88,31 +93,65 @@ doAllJobs _ ([], doc) = doc -- No job remain. All done
 -- updated. Undone jobs may be updated as well if more jobs are
 -- discovered when doing this job.
 doJob :: Job -> Progress -> Progress
-doJob (BindJob v e)
-  = addStmt (text "always_comb" <+> ppr v <+> text "=" <+> (ppr $ getVExpr e) <> semi)
+doJob (BindJob vs docfunc e)
+  = let (js, stmt) = getExpr e
+    in (addJobs js) . (addStmt (text "always_comb" <+> bindLHS vs <+> text "=" <+> ppr (apply docfunc $ ppr stmt) <> semi))
   -- Assuming the binder can always be implemented by combinational
   -- logic
+doJob (DefJob v) = addStmt (varDef v <+> varVId v <> semi)
+
+bindLHS :: [Var] -> SDoc
+bindLHS (v:[]) = varVId v -- Only one var
+bindLHS vs = braces $ pprWithCommas varVId vs
 
 addStmt :: SDoc -> Progress -> Progress
 addStmt stmt (j, stmtDone) = (j, stmt $+$ stmtDone)
 
-getVExpr :: CoreExpr -> SDocFunc
-getVExpr (App e arg) = apply (getVExpr e) (ppr $ getVExpr arg)
-getVExpr (Var v)
-  | Just (tname, fname) <- splitTypeFuncMaybe vname
-  = getBuiltInExpr tname fname
-  | otherwise
-  = SDocFunc [Body $ ppr v]
-  where vname = getOccString $ varName v
+justDoc :: SDocFunc -> ([Job], SDocFunc)
+justDoc sdoc = ([], sdoc)
 
-getVExpr (Lam b exp) = getVExpr exp
-getVExpr e = error ("Unexpected expression in getVExpr: " ++
+addJobs :: [Job] -> ([Job], a) -> ([Job], a)
+addJobs js (jobs, v) = (js ++ jobs, v)
+
+getExpr :: CoreExpr -> ([Job], SDocFunc)
+getExpr (App e arg) = let (j0, stmt0) = getExpr e
+                          (j1, stmt1) = getExpr arg
+                      in (j0 ++ j1, apply stmt0 (ppr stmt1))
+getExpr (Var v) = justDoc $ getVarExpr v
+getExpr (Lam b exp) = getExpr exp
+getExpr (Case ce v t alts) = getCaseExpr ce alts
+getExpr (Lit (LitNumber _ v _)) = justDoc $ SDocFunc [Body $ ppr v]
+getExpr e = error ("Unexpected expression in getExpr: " ++
                      (showSDocUnsafe $ myPprExpr e))
+
+getVarExpr :: Var -> SDocFunc
+getVarExpr v
+  | Just (tname, fname) <- splitBuiltinTypeFuncMaybe vname
+  = getBuiltInExpr tname fname
+  | ofIntCtorName v
+  = bypassSDocFunc -- boxed integer values are treated identical as
+                  -- unboxed ones
+  | (a:b:[]) <- vname,
+    a `elem` ['+', '-', '*'],
+    b == '#'
+    -- +#, -#, *# on unboxed int 
+  = binarySDocFunc (a:[])
+  | vname == "plusWord#"
+  = binarySDocFunc "+"
+  | Just tail <- stripPrefix "narrow" vname
+  , Just (_, tail') <- stripAnyPrefix ["8", "16", "32"] tail
+  , tail' == "Int#" || tail' == "Word#"
+    -- Narrowing function
+  = funCallSDocFunc ("hada::" ++ init vname)
+  | otherwise
+  -- Just a variable, print its name
+  = SDocFunc [Body $ varVId v]
+  where vname = getOccString $ varName v
 
 -- | Try to retrieve type and function from a string
 -- Return Nothing if failed
-splitTypeFuncMaybe :: String -> Maybe (String, String)
-splitTypeFuncMaybe n
+splitBuiltinTypeFuncMaybe :: String -> Maybe (String, String)
+splitBuiltinTypeFuncMaybe n
   | Just (_, tail) <- stripAnyPrefix ["$fNum", "$fBits"] n
   -- Split a string of form like "$f[CNAME][TYPE]_$c[FUNC]", where
   --  [CNAME] must be either "Num" or "Bits", [TYPE] must be "Int",
@@ -139,28 +178,44 @@ splitTypeFuncMaybe n
   | otherwise
   = Nothing
 
+-- | Whether the name of something is one of the builtin integer type
+-- constructors of I#, I8#, I16#, I32#, I64# in GHC.Int and W#, W8#,
+-- W16#, W32#, W64# in GHC.Word
+ofIntCtorName :: NamedThing a => a -> Bool
+ofIntCtorName thing
+  | Just s <- nameModuleStringMaybe $ getName thing,
+    s `elem` ["GHC.Types", "GHC.Int", "GHC.Word"]
+  = case stripAnyPrefix ["I", "W"] nstr of
+      Just (_, tail0) -> case stripAnyPrefix ["64", "32", "16", "8", ""] tail0 of
+                           Just (_, tail1) -> tail1 == "#"
+                           otherwise -> False
+      otherwise -> False
+  | otherwise
+  = False
+  where nstr = getOccString $ getName thing
+
 getBuiltInExpr :: String -> String -> SDocFunc
 getBuiltInExpr tname fname
-  | fname == "+" = binaryExpr "+"
-  | fname == "-" = binaryExpr "-"
-  | fname == "*" = binaryExpr "*"
-  | fname == "negate" = unaryExpr "-"
+  | fname == "+" = binarySDocFunc "+"
+  | fname == "-" = binarySDocFunc "-"
+  | fname == "*" = binarySDocFunc "*"
+  | fname == "negate" = unarySDocFunc "-"
   | fname == "abs" = if "Int" `isPrefixOf` tname
-                     then funCall ("hada::abs" ++ (autoWidthStr $ drop 3 tname))
-                     else varExpr
+                     then funCallSDocFunc ("hada::abs" ++ (autoWidthStr $ drop 3 tname))
+                     else bypassSDocFunc
   | fname == "signum" = if "Int" `isPrefixOf` tname
-                        then funCall ("hada::signum" ++ (autoWidthStr $ drop 3 tname))
-                        else funCall ("hada::signumU" ++ (autoWidthStr $ drop 4 tname))
-  | fname == "eq" = binaryExpr "=="
-  | fname == "ne" = binaryExpr "!="
-  | fname == "lt" = binaryExpr "<"
-  | fname == "le" = binaryExpr "<="
-  | fname == "gt" = binaryExpr ">"
-  | fname == "ge" = binaryExpr ">="
-  | fname == ".&." = binaryExpr "&"
-  | fname == ".|." = binaryExpr "|"
-  | fname == "xor" = binaryExpr "^"
-  | fname == "complement" = unaryExpr "~"
+                        then funCallSDocFunc ("hada::signum" ++ (autoWidthStr $ drop 3 tname))
+                        else funCallSDocFunc ("hada::signumU" ++ (autoWidthStr $ drop 4 tname))
+  | fname == "eq" = binarySDocFunc "=="
+  | fname == "ne" = binarySDocFunc "!="
+  | fname == "lt" = binarySDocFunc "<"
+  | fname == "le" = binarySDocFunc "<="
+  | fname == "gt" = binarySDocFunc ">"
+  | fname == "ge" = binarySDocFunc ">="
+  | fname == ".&." = binarySDocFunc "&"
+  | fname == ".|." = binarySDocFunc "|"
+  | fname == "xor" = binarySDocFunc "^"
+  | fname == "complement" = unarySDocFunc "~"
   | otherwise = error $ "Unknown builtin function " ++ fname
   where autoWidthStr str =  case str of
                               [] -> if (maxBound::Word) == 0xFFFFFFFF
@@ -168,14 +223,34 @@ getBuiltInExpr tname fname
                                     else "64"
                               otherwise -> str
 
-binaryExpr :: String -> SDocFunc
-binaryExpr op = SDocFunc ((Hole 0) : (Body (space <> text op <> space)) : (Hole 1) : [])
+-- May add new jobs when converting case expression
+getCaseExpr ::
+  CoreExpr -> -- The case expression
+  [Alt Var] -> -- The alternative list
+  ([Job], SDocFunc)
+getCaseExpr ce ((altcon, vs, e):[]) = addJobs newJobs $ getExpr e -- The last alternative, unconditional
+  where newJobs = ((BindJob vs sdf ce) : (map DefJob vs))
+        sdf
+          | DataAlt datacon <- altcon
+          , ofIntCtorName datacon
+          = funCallSDocFunc ("hada::match" ++ (init $ getOccString $ getName datacon))
+          | otherwise
+          = bypassSDocFunc
 
-unaryExpr :: String -> SDocFunc
-unaryExpr op = SDocFunc ((Body (text op)) : (Hole 0) : [])
+getCaseExpr _ _ = error "Unsupported case expression"
 
-varExpr :: SDocFunc
-varExpr = SDocFunc (Hole 0 : [])
 
-funCall :: String -> SDocFunc
-funCall fName = SDocFunc (Body (text fName <> lparen) : Variadic [] : Body rparen : [])
+-- | Convert any string having character other than a-z, A-Z, 0-9 and
+-- _ to escaped Verilog Identifier.
+vId :: String -> String
+vId id
+  | all (\c -> ((c >= 'a' && c <= 'z') ||
+                 (c >= 'A' && c <= 'Z') ||
+                 (c >= '0' && c <= '9') ||
+                 c == '_')) id
+  = id -- Regular identifier, no escaping
+  | otherwise
+  = ('\\':id) ++ " "
+
+varVId :: Var -> SDoc
+varVId = text . vId . (\v -> (getOccString $ varName v) ++ "_" ++ (show $ varUnique v))
