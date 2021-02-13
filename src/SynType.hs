@@ -1,7 +1,7 @@
 -- Type related synthesizing
 module SynType (SynType, synType, cppr, hsppr) where
 import Prelude hiding ((<>))
-import Util(nameIsInModule)
+import NameX(isInModule)
 import Type (Type, splitTyConApp_maybe)
 import TyCon (tyConName)
 import Name (getOccString, nameModule)
@@ -28,12 +28,11 @@ synType t
 -- Synthesize a type constructor application
 synTyConApp :: TyCon -> [Type] -> SynType
 synTyConApp con ts
-  | nameIsInModule tn "GHC.Types" || -- Built-in types in GHC.Types
-    nameIsInModule tn "GHC.Int" ||
-    nameIsInModule tn "GHC.Word" ||
-    nameIsInModule tn "GHC.Prim"
+  | isInModule con "GHC.Types" || -- Built-in types in GHC.Types
+    isInModule con "GHC.Int" ||
+    isInModule con "GHC.Word" ||
+    isInModule con "GHC.Prim"
   = builtinType $ getOccString con
-  where tn = tyConName con
 
 synTyConApp con ts
   = error ("Unknown type: " ++ (moduleNameString $ moduleName $ nameModule $ tyConName con))

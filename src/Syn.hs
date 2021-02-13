@@ -14,7 +14,7 @@ import Var (Var, varName)
 import Name (getOccString)
 import CoreArity (etaExpand, exprArity)
 
-import Util (varIsInModule)
+import NameX (isInModule)
 
 ghcFrontEnd :: String -> Ghc (HscEnv, ModGuts)
 ghcFrontEnd file
@@ -43,13 +43,13 @@ toTidy file = defaultErrorHandler defaultFatalMessager defaultFlushOut $ do
 -- If the var is TrNameS defined in GHC.Types
 isGHCTypesTrNameSApp :: CoreExpr -> Bool
 isGHCTypesTrNameSApp (App (Var v) _) =
-  (getOccString v == "TrNameS") && (varIsInModule v "GHC.Types")
+  (getOccString v == "TrNameS") && (isInModule v "GHC.Types")
 isGHCTypesTrNameSApp _ = False
 
 -- If the var is Module define in GHC.Types
 isGHCTypesModuleApp :: CoreExpr -> Bool
 isGHCTypesModuleApp (App (App (Var v) _) _) =
-  (getOccString v == "Module") && (varIsInModule v "GHC.Types")
+  (getOccString v == "Module") && (isInModule v "GHC.Types")
 isGHCTypesModuleApp _ = False
 
 

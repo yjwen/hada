@@ -4,7 +4,7 @@ module Verilator (cppDriver, hsWrapper) where
 import Prelude hiding ((<>))
 import Syn(collectInputVars)
 import SynType(synType, cppr, hsppr)
-import Util(nameIsInModule)
+import NameX(isInModule)
 import CoreSyn
 import Var
 import Outputable
@@ -61,9 +61,9 @@ ctype t
 
 ctypeTyCon :: TyCon -> [Type] -> SDoc
 ctypeTyCon con ts
-  | nameIsInModule tn "GHC.Types" ||
-    nameIsInModule tn "GHC.Int" ||
-    nameIsInModule tn "GHC.Word"
+  | isInModule con "GHC.Types" ||
+    isInModule con "GHC.Int" ||
+    isInModule con "GHC.Word"
   = ctypeBuiltin $ getOccString con
   where tn = tyConName con
 

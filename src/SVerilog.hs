@@ -4,7 +4,7 @@ import Prelude hiding ((<>))
 import MyPpr
 import Syn (collectInputVars)
 import SynType (synType)
-import Util (nameModuleStringMaybe)
+import NameX (moduleStringMaybe)
 import Outputable
 import CoreSyn
 import Name (Name, getOccString, getName, mkSystemVarName, nameUnique, NamedThing)
@@ -156,25 +156,17 @@ splitBuiltinTypeFuncMaybe n
   -- Split a string of form like "$f[CNAME][TYPE]_$c[FUNC]", where
   --  [CNAME] must be either "Num" or "Bits", [TYPE] must be "Int",
   --  "Int8/16/32/34", "Word" or "Word8/16/32/64"
-  = case stripAnyPrefix ["Int", "Word" ] tail of
-      Just (tname, tail1) ->
-        case stripAnyPrefix ["8", "16", "32", "64", ""] tail1 of
-          Just (wname, tail2) ->
-            case stripPrefix "_$c" tail2 of
-              Just fname -> Just (tname ++ wname, fname)
-              otherwise -> Nothing
-          otherwise -> Nothing
-      otherwise -> Nothing
+  = do (tname, tail1) <- stripAnyPrefix ["Int", "Word" ] tail
+       (wname, tail2) <- stripAnyPrefix ["8", "16", "32", "64", ""] tail1
+       fname <- stripPrefix "_$c" tail2
+       return (tname ++ wname, fname)
   | Just (fname, tail) <- stripAnyPrefix ["eq", "neq", "lt", "le", "gt", "ge"] n
   -- Split a string of form like "[FUNC][TYPE]", where [FUNC] must be
   -- one of the above list, and [TYPE] must be "Int", "Int8/16/32/64",
   -- "Word" or "Word8/16/32/64"
-  = case stripAnyPrefix ["Int", "Word"] tail of
-      Just (tname, tail1) ->
-        case elemIndex tail1 ["8", "16", "32", "64", ""] of
-          Just _ -> Just (tail, fname)
-          Nothing -> Nothing
-      Nothing -> Nothing
+  = do (tname, tail1) <- stripAnyPrefix ["Int", "Word"] tail
+       _ <- elemIndex tail1 ["8", "16", "32", "64", ""]
+       return (tail, fname)
   | otherwise
   = Nothing
 
@@ -183,7 +175,7 @@ splitBuiltinTypeFuncMaybe n
 -- W16#, W32#, W64# in GHC.Word
 ofIntCtorName :: NamedThing a => a -> Bool
 ofIntCtorName thing
-  | Just s <- nameModuleStringMaybe $ getName thing,
+  | Just s <- moduleStringMaybe thing,
     s `elem` ["GHC.Types", "GHC.Int", "GHC.Word"]
   = case stripAnyPrefix ["I", "W"] nstr of
       Just (_, tail0) -> case stripAnyPrefix ["64", "32", "16", "8", ""] tail0 of
