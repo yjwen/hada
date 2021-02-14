@@ -143,6 +143,12 @@ getVarExpr v
   , tail' == "Int#" || tail' == "Word#"
     -- Narrowing function
   = funCallSDocFunc ("hada::" ++ init vname)
+  -- logical and/or
+  | vname == "||" || vname == "&&"
+  = binarySDocFunc vname
+  --logical not
+  | vname == "not"
+  = unarySDocFunc "!"
   | otherwise
   -- Just a variable, print its name
   = SDocFunc [Body $ varVId v]
