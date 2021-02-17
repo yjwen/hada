@@ -19,16 +19,16 @@ import Literal
 
 import Data.List
 import ListX (stripAnyPrefix)
-import SDocFunc
+import SDocExpr
 
 toSV :: CoreBind -> IO (SDoc, Var)
 toSV (NonRec b e) = toVModule b e
 toSV (Rec bs) = error "Recursive bindings"
 
 -- | A job is to convert a haskell syntax to SV statement
-data Job = BindJob [Var] SDocFunc CoreExpr
+data Job = BindJob [Var] SDocExpr CoreExpr
            -- For printing a bind of vars to expression, optionally
-           -- wrapped by a SDocFunc
+           -- wrapped by a SDocExpr
          | DefJob Var
            
 
@@ -95,7 +95,7 @@ doAllJobs _ ([], doc) = doc -- No job remain. All done
 doJob :: Job -> Progress -> Progress
 doJob (BindJob vs docfunc e)
   = let (js, stmt) = getExpr e
-    in (addJobs js) . (addStmt (text "always_comb" <+> bindLHS vs <+> text "=" <+> ppr (apply docfunc $ ppr stmt) <> semi))
+    in (addJobs js) . (addStmt (text "always_comb" <+> bindLHS vs <+> text "=" <+> ppr (apply docfunc stmt) <> semi))
   -- Assuming the binder can always be implemented by combinational
   -- logic
 doJob (DefJob v) = addStmt (varDef v <+> varVId v <> semi)
@@ -107,24 +107,24 @@ bindLHS vs = braces $ pprWithCommas varVId vs
 addStmt :: SDoc -> Progress -> Progress
 addStmt stmt (j, stmtDone) = (j, stmt $+$ stmtDone)
 
-justDoc :: SDocFunc -> ([Job], SDocFunc)
+justDoc :: SDocExpr -> ([Job], SDocExpr)
 justDoc sdoc = ([], sdoc)
 
 addJobs :: [Job] -> ([Job], a) -> ([Job], a)
 addJobs js (jobs, v) = (js ++ jobs, v)
 
-getExpr :: CoreExpr -> ([Job], SDocFunc)
+getExpr :: CoreExpr -> ([Job], SDocExpr)
 getExpr (App e arg) = let (j0, stmt0) = getExpr e
                           (j1, stmt1) = getExpr arg
-                      in (j0 ++ j1, apply stmt0 (ppr stmt1))
+                      in (j0 ++ j1, apply stmt0 stmt1)
 getExpr (Var v) = justDoc $ getVarExpr v
 getExpr (Lam b exp) = getExpr exp
 getExpr (Case ce v t alts) = getCaseExpr ce alts
-getExpr (Lit (LitNumber _ v _)) = justDoc $ SDocFunc [Body $ ppr v]
+getExpr (Lit (LitNumber _ v _)) = justDoc $ SDocConst $ ppr v
 getExpr e = error ("Unexpected expression in getExpr: " ++
                      (showSDocUnsafe $ myPprExpr e))
 
-getVarExpr :: Var -> SDocFunc
+getVarExpr :: Var -> SDocExpr
 getVarExpr v
   | Just (tname, fname) <- splitBuiltinTypeFuncMaybe vname
   = getBuiltInExpr tname fname
@@ -192,7 +192,7 @@ ofIntCtorName thing
   = False
   where nstr = getOccString $ getName thing
 
-getBuiltInExpr :: String -> String -> SDocFunc
+getBuiltInExpr :: String -> String -> SDocExpr
 getBuiltInExpr tname fname
   | fname == "+" = binarySDocFunc "+"
   | fname == "-" = binarySDocFunc "-"
@@ -225,7 +225,7 @@ getBuiltInExpr tname fname
 getCaseExpr ::
   CoreExpr -> -- The case expression
   [Alt Var] -> -- The alternative list
-  ([Job], SDocFunc)
+  ([Job], SDocExpr)
 getCaseExpr ce ((altcon, vs, e):[]) = addJobs newJobs $ getExpr e -- The last alternative, unconditional
   where newJobs = ((BindJob vs sdf ce) : (map DefJob vs))
         sdf
