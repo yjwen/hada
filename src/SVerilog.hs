@@ -4,7 +4,7 @@ import Prelude hiding ((<>))
 import MyPpr
 import Syn (collectInputVars)
 import SynType (synType)
-import NameX (moduleStringMaybe)
+import NameX (moduleStringMaybe, isInModule)
 import Outputable
 import CoreSyn
 import Name (Name, getOccString, getName, mkSystemVarName, nameUnique, NamedThing)
@@ -129,8 +129,8 @@ getVarExpr v
   | Just (tname, fname) <- splitBuiltinTypeFuncMaybe vname
   = getBuiltInExpr tname fname
   | ofIntCtorName v
-  = bypassSDocFunc -- boxed integer values are treated identical as
-                  -- unboxed ones
+  = funCallSDocFunc ("hada::cons" ++ init vname)
+  -- ^ Construct boxed integer values from unboxed ones
   | (a:b:[]) <- vname,
     a `elem` ['+', '-', '*'],
     b == '#'
@@ -141,14 +141,16 @@ getVarExpr v
   | Just tail <- stripPrefix "narrow" vname
   , Just (_, tail') <- stripAnyPrefix ["8", "16", "32"] tail
   , tail' == "Int#" || tail' == "Word#"
-    -- Narrowing function
-  = funCallSDocFunc ("hada::" ++ init vname)
+  -- Narrowing functions, ignored as the narrowing is done by the "hada::ctor" functions
+  = bypassSDocFunc
   -- logical and/or
   | vname == "||" || vname == "&&"
   = binarySDocFunc vname
   --logical not
   | vname == "not"
   = unarySDocFunc "!"
+  | isInModule v "GHC.Prim"
+  = getPrimExpr v
   | otherwise
   -- Just a variable, print its name
   = SDocFunc [Body $ varVId v]
@@ -220,6 +222,18 @@ getBuiltInExpr tname fname
                                     then "32"
                                     else "64"
                               otherwise -> str
+
+getPrimExpr :: Var -> SDocExpr
+getPrimExpr v
+  | vname == "uncheckedIShiftL#" ||
+    vname == "uncheckedShiftL#"
+  = binarySemiConst "<<"
+  | vname == "uncheckedIShiftRA#"
+  = binarySemiConst ">>>"
+  | vname == "uncheckedShiftRL#"
+  = binarySemiConst ">>"
+  | otherwise = error $ "Unknown prime var " ++ vname
+  where vname = getOccString $ getName v
 
 -- May add new jobs when converting case expression
 getCaseExpr ::

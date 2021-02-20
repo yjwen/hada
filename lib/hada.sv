@@ -38,30 +38,44 @@ package hada;
       return a == 0 ? longint'(0) : longint'(1);
    endfunction // signumU64
 
-   // Narrowing functions
-   function byte narrow8Int(longint a);
+   // Constructors for unboxed integer types
+   function byte consI8(longint a);
       return byte'(a);
-   endfunction // narrow8Int
-   function shortint narrow16Int(longint a);
+   endfunction // consI8
+   function shortint consI16(longint a);
       return shortint'(a);
-   endfunction // narrow16Int
-   function int narrow32Int(longint a);
+   endfunction // consI16
+   function int consI32(longint a);
       return int'(a);
-   endfunction // narrow32Int
+   endfunction // consI32
+   function longint consI64(longint a);
+      return a;
+   endfunction // consI64
+   function longint consI(longint a);
+      return a;
+   endfunction // consI
+   
    typedef byte unsigned ubyte;
    typedef shortint unsigned ushortint;
    typedef int unsigned      uint;
    typedef longint unsigned  ulongint;
 
-   function ubyte narrow8Word(ulongint a);
+   
+   function ubyte consW8(ulongint a);
       return ubyte'(a);
-   endfunction // narrow8Word
-   function ushortint narrow16Word(ulongint a);
+   endfunction // consW8
+   function ushortint consW16(ulongint a);
       return ushortint'(a);
-   endfunction // narrow16Word
-   function uint narrow32Word(ulongint a);
+   endfunction // consW16
+   function uint consW32(ulongint a);
       return uint'(a);
-   endfunction // narrow32Word
+   endfunction // consW32
+   function ulongint consW64(ulongint a);
+      return a;
+   endfunction // consW64
+   function ulongint consW(ulongint a);
+      return a;
+   endfunction // consW
 
    // For pattern matching of unboxed values
    function longint matchI8(byte v);

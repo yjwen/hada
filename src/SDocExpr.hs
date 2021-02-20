@@ -2,6 +2,7 @@ module SDocExpr( SDocExpr(SDocFunc, SDocConst)
                , SDocSeg(Body, Hole, Variadic)
                , apply
                , binarySDocFunc, unarySDocFunc, bypassSDocFunc, funCallSDocFunc
+               , binarySemiConst,
                ) where
 import Prelude hiding ((<>))
 import Data.Word
@@ -62,3 +63,5 @@ bypassSDocFunc = SDocFunc (Hole 0 : [])
 funCallSDocFunc :: String -> SDocExpr
 funCallSDocFunc fName = SDocFunc (Body (text fName <> lparen) : Variadic [] : Body rparen : [])
 
+binarySemiConst :: String -> SDocExpr
+binarySemiConst op = SDocFunc ((Hole 0) : (Body (space <> text op <> space)) : (ConstHole 1) : [])

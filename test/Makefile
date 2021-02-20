@@ -48,8 +48,7 @@ testNum : TestNum.hs $(NumWHS) $(NumCPPObjs) $(VerilatedObj) $(NumVLibs)
 runTestNum : testNum
 	./$^
 
-PrimBinds = plusOne plusOne8 plusOne16 plusOne32 plusOne64
-PrimBinds += plusOneU plusOne8U plusOne16U plusOne32U plusOne64U
+PrimBinds = $(subst _,,$(foreach d,_ U 8 U8 16 U16 32 U32 64 U64,plusOne$(d) lshc$(d) rshc$(d)))
 $(foreach b,$(PrimBinds),$(eval $(call TestRules,$(b),Prim)))
 
 testPrim : TestPrim.hs $(PrimWHS) $(PrimCPPObjs) $(VerilatedObj) $(PrimVLibs)
