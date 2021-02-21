@@ -130,19 +130,6 @@ getVarExpr v
   = getBuiltInExpr tname fname
   | ofIntCtorName v
   = funCallSDocFunc ("hada::cons" ++ init vname)
-  -- ^ Construct boxed integer values from unboxed ones
-  | (a:b:[]) <- vname,
-    a `elem` ['+', '-', '*'],
-    b == '#'
-    -- +#, -#, *# on unboxed int 
-  = binarySDocFunc (a:[])
-  | vname == "plusWord#"
-  = binarySDocFunc "+"
-  | Just tail <- stripPrefix "narrow" vname
-  , Just (_, tail') <- stripAnyPrefix ["8", "16", "32"] tail
-  , tail' == "Int#" || tail' == "Word#"
-  -- Narrowing functions, ignored as the narrowing is done by the "hada::ctor" functions
-  = bypassSDocFunc
   -- logical and/or
   | vname == "||" || vname == "&&"
   = binarySDocFunc vname
@@ -225,6 +212,19 @@ getBuiltInExpr tname fname
 
 getPrimExpr :: Var -> SDocExpr
 getPrimExpr v
+  -- ^ Construct boxed integer values from unboxed ones
+  | vname == "plusWord#"
+  = binarySDocFunc "+"
+  | (a:b:[]) <- vname,
+    a `elem` ['+', '-', '*'],
+    b == '#'
+    -- +#, -#, *# on unboxed int 
+  = binarySDocFunc (a:[])
+  | Just tail <- stripPrefix "narrow" vname
+  , Just (_, tail') <- stripAnyPrefix ["8", "16", "32"] tail
+  , tail' == "Int#" || tail' == "Word#"
+  -- Narrowing functions, ignored as the narrowing is done by the "hada::ctor" functions
+  = bypassSDocFunc
   | vname == "uncheckedIShiftL#" ||
     vname == "uncheckedShiftL#"
   = binarySemiConst "<<"
