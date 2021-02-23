@@ -1,18 +1,23 @@
-module SDocExpr( SDocExpr(SDocFunc, SDocConst)
+module SDocExpr( SDocExpr(SDocFunc, SDocConst, SDocIdentity)
                , SDocSeg(Body, Hole, Variadic)
                , apply
-               , binarySDocFunc, unarySDocFunc, bypassSDocFunc, funCallSDocFunc
+               , binarySDocFunc, unarySDocFunc, funCallSDocFunc
                , binarySemiConst,
                ) where
 import Prelude hiding ((<>))
 import Data.Word
+import Data.Int
 import Outputable
 
 data SDocSeg = Body SDoc
              -- Already filled in contents
-             | Hole Word8
-             -- Positions to be filled with SDoc. Hole n indicates it
-             -- is for the n-th argument.
+             | Hole Word8 Int8
+             -- Positions to be filled with SDoc, with
+             -- precedence. Hole n p indicates it is for the n-th
+             -- argument with precedence p. Larger p means higher
+             -- precedence. When the hole is filled by an expression
+             -- with lower precedence, the expression is encapsulated
+             -- in parentheses.
              | ConstHole Word8
              -- Positions to be filled by a constant expression, aka,
              -- SDocConst. ConstHole is for restriction of
@@ -20,20 +25,30 @@ data SDocSeg = Body SDoc
              -- be by a constant value to be synthesizable.
              | Variadic [SDoc] -- Variadic arguments
 
-data SDocExpr = SDocFunc [SDocSeg]
+data SDocExpr = SDocFunc Int8 [SDocSeg]
+              -- An expression with precedence
               | SDocConst SDoc
+              -- Constant expression, assuming the SDoc is just a
+              -- literal
+              | SDocIdentity
+              -- Applying SDocIdentity with an SDocExpr return that
+              -- SDocExpr
 
 instance Outputable SDocExpr where
-  ppr (SDocFunc segs) = cat $ map pprSeg segs
+  ppr (SDocFunc _ segs) = cat $ map pprSeg segs
   ppr (SDocConst sdoc) = sdoc
 
 updateSeg :: SDocExpr -> SDocSeg -> SDocSeg
-updateSeg expr (Hole i) = case i of
-                           0 -> Body $ ppr expr
-                           _ -> Hole (i - 1)
+updateSeg expr (Hole i p)
+  | 0 <- i
+  = case expr of
+      SDocFunc ep _ -> Body $ (if ep >= p then id else parens) $ ppr expr
+      SDocConst _ -> Body $ ppr expr
+  | otherwise
+  = Hole (i - 1) p
 updateSeg expr (ConstHole i) = case i of
                                  0 -> case expr of
-                                        SDocFunc _ -> error "Expecting a constant."
+                                        SDocFunc _ _ -> error "Expecting a constant."
                                         SDocConst sdoc -> Body sdoc
                                  _ -> ConstHole (i - 1)
 updateSeg expr (Variadic args) = Variadic (args ++ [ppr expr])
@@ -48,20 +63,18 @@ pprSeg _ = error "Insufficient argument" -- For Hole and ConstHole
 -- the Hole 0 or ConstHole 0 will be filled with that SDoc, all other
 -- holes decreased by one.
 apply :: SDocExpr -> SDocExpr -> SDocExpr
-apply (SDocFunc segs) expr = SDocFunc $ map (updateSeg expr) segs
+apply (SDocFunc p segs) expr = SDocFunc p $ map (updateSeg expr) segs
 apply (SDocConst _) _ = error "Applying argument to a constant"
+apply SDocIdentity expr = expr
 
-binarySDocFunc :: String -> SDocExpr
-binarySDocFunc op = SDocFunc ((Hole 0) : (Body (space <> text op <> space)) : (Hole 1) : [])
+binarySDocFunc :: String -> Int8 -> SDocExpr
+binarySDocFunc op p = SDocFunc p ((Hole 0 p) : (Body (space <> text op <> space)) : (Hole 1 (p + 1)) : [])
 
-unarySDocFunc :: String -> SDocExpr
-unarySDocFunc op = SDocFunc ((Body (text op)) : (Hole 0) : [])
-
-bypassSDocFunc :: SDocExpr
-bypassSDocFunc = SDocFunc (Hole 0 : [])
+unarySDocFunc :: String -> Int8 -> SDocExpr
+unarySDocFunc op p = SDocFunc p ((Body (text op)) : (Hole 0 p) : [])
 
 funCallSDocFunc :: String -> SDocExpr
-funCallSDocFunc fName = SDocFunc (Body (text fName <> lparen) : Variadic [] : Body rparen : [])
+funCallSDocFunc fName = SDocFunc maxBound (Body (text fName <> lparen) : Variadic [] : Body rparen : [])
 
-binarySemiConst :: String -> SDocExpr
-binarySemiConst op = SDocFunc ((Hole 0) : (Body (space <> text op <> space)) : (ConstHole 1) : [])
+binarySemiConst :: String -> Int8 -> SDocExpr
+binarySemiConst op p = SDocFunc p ((Hole 0 p) : (Body (space <> text op <> space)) : (ConstHole 1) : [])

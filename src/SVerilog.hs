@@ -57,7 +57,7 @@ toVModule b e =
               parens (vcat $ punctuate (text ", ")  ((outputDef vo):(map inputDef vis))) <> semi
               $+$
               -- Body
-              nest 2 (doAllJobs [] ([BindJob [vo] bypassSDocFunc e], empty))
+              nest 2 (doAllJobs [] ([BindJob [vo] SDocIdentity e], empty))
               $+$
               text "endmodule")
             , vo)
@@ -131,16 +131,18 @@ getVarExpr v
   | ofIntCtorName v
   = funCallSDocFunc ("hada::cons" ++ init vname)
   -- logical and/or
-  | vname == "||" || vname == "&&"
-  = binarySDocFunc vname
+  | vname == "||" 
+  = opOr
+  | vname == "&&"
+  = opAnd
   --logical not
   | vname == "not"
-  = unarySDocFunc "!"
+  = opNot
   | isInModule v "GHC.Prim"
   = getPrimExpr v
   | otherwise
   -- Just a variable, print its name
-  = SDocFunc [Body $ varVId v]
+  = SDocFunc 0 [Body $ varVId v]
   where vname = getOccString $ varName v
 
 -- | Try to retrieve type and function from a string
@@ -183,26 +185,26 @@ ofIntCtorName thing
 
 getBuiltInExpr :: String -> String -> SDocExpr
 getBuiltInExpr tname fname
-  | fname == "+" = binarySDocFunc "+"
-  | fname == "-" = binarySDocFunc "-"
-  | fname == "*" = binarySDocFunc "*"
-  | fname == "negate" = unarySDocFunc "-"
+  | fname == "+" = opPlus
+  | fname == "-" = opMinus
+  | fname == "*" = opMul
+  | fname == "negate" = opNeg
   | fname == "abs" = if "Int" `isPrefixOf` tname
                      then funCallSDocFunc ("hada::abs" ++ (autoWidthStr $ drop 3 tname))
-                     else bypassSDocFunc
+                     else SDocIdentity
   | fname == "signum" = if "Int" `isPrefixOf` tname
                         then funCallSDocFunc ("hada::signum" ++ (autoWidthStr $ drop 3 tname))
                         else funCallSDocFunc ("hada::signumU" ++ (autoWidthStr $ drop 4 tname))
-  | fname == "eq" = binarySDocFunc "=="
-  | fname == "ne" = binarySDocFunc "!="
-  | fname == "lt" = binarySDocFunc "<"
-  | fname == "le" = binarySDocFunc "<="
-  | fname == "gt" = binarySDocFunc ">"
-  | fname == "ge" = binarySDocFunc ">="
-  | fname == ".&." = binarySDocFunc "&"
-  | fname == ".|." = binarySDocFunc "|"
-  | fname == "xor" = binarySDocFunc "^"
-  | fname == "complement" = unarySDocFunc "~"
+  | fname == "eq" = opEq
+  | fname == "ne" = opNe
+  | fname == "lt" = opLt
+  | fname == "le" = opLe
+  | fname == "gt" = opGt
+  | fname == "ge" = opGe
+  | fname == ".&." = opBitAnd
+  | fname == ".|." = opBitOr
+  | fname == "xor" = opXor
+  | fname == "complement" = opComplement
   | otherwise = error $ "Unknown builtin function " ++ fname
   where autoWidthStr str =  case str of
                               [] -> if (maxBound::Word) == 0xFFFFFFFF
@@ -214,24 +216,25 @@ getPrimExpr :: Var -> SDocExpr
 getPrimExpr v
   -- ^ Construct boxed integer values from unboxed ones
   | vname == "plusWord#"
-  = binarySDocFunc "+"
-  | (a:b:[]) <- vname,
-    a `elem` ['+', '-', '*'],
-    b == '#'
-    -- +#, -#, *# on unboxed int 
-  = binarySDocFunc (a:[])
+  = opPlus
+  | vname == "+#"
+  = opPlus
+  | vname == "-#"
+  = opMinus
+  | vname == "*#"
+  = opMul
   | Just tail <- stripPrefix "narrow" vname
   , Just (_, tail') <- stripAnyPrefix ["8", "16", "32"] tail
   , tail' == "Int#" || tail' == "Word#"
   -- Narrowing functions, ignored as the narrowing is done by the "hada::ctor" functions
-  = bypassSDocFunc
+  = SDocIdentity
   | vname == "uncheckedIShiftL#" ||
     vname == "uncheckedShiftL#"
-  = binarySemiConst "<<"
+  = opShL
   | vname == "uncheckedIShiftRA#"
-  = binarySemiConst ">>>"
+  = opShRA
   | vname == "uncheckedShiftRL#"
-  = binarySemiConst ">>"
+  = opShRL
   | otherwise = error $ "Unknown prime var " ++ vname
   where vname = getOccString $ getName v
 
@@ -247,7 +250,7 @@ getCaseExpr ce ((altcon, vs, e):[]) = addJobs newJobs $ getExpr e -- The last al
           , ofIntCtorName datacon
           = funCallSDocFunc ("hada::match" ++ (init $ getOccString $ getName datacon))
           | otherwise
-          = bypassSDocFunc
+          = SDocIdentity
 
 getCaseExpr _ _ = error "Unsupported case expression"
 
@@ -266,3 +269,40 @@ vId id
 
 varVId :: Var -> SDoc
 varVId = text . vId . (\v -> (getOccString $ varName v) ++ "_" ++ (show $ varUnique v))
+
+-- Operators and their precedences
+-- Unary !, ~, +, - : 14
+-- {}, {{}}         : 13
+-- ()               : 12
+-- **               : 11
+-- *, /, %          : 10
+-- Binary +, -      :  9
+-- <<, >>, <<<, >>> :  8
+-- <, <=, >, >=     :  7
+-- ==, !=, ===, !== :  6
+-- &, ~&            :  5
+-- ^, ~^            :  4
+-- |, ~|            :  3
+-- &&               :  2
+-- ||               :  1
+-- ?:               :  0
+opComplement = unarySDocFunc "~" 14
+opNot = unarySDocFunc "!" 14
+opNeg = unarySDocFunc "-" 14
+opMul = binarySDocFunc "*" 10
+opPlus = binarySDocFunc "+" 9
+opMinus = binarySDocFunc "-" 9
+opShL = binarySemiConst "<<" 8
+opShRA = binarySemiConst ">>>" 8
+opShRL = binarySemiConst ">>" 8
+opLt = binarySDocFunc "<" 7
+opLe = binarySDocFunc "<=" 7
+opGt = binarySDocFunc ">" 7
+opGe = binarySDocFunc ">=" 7
+opEq = binarySDocFunc "==" 6
+opNe = binarySDocFunc "!=" 6
+opBitAnd = binarySDocFunc "&" 5
+opXor = binarySDocFunc "^" 4
+opBitOr = binarySDocFunc "|" 3
+opAnd = binarySDocFunc "&&" 2
+opOr = binarySDocFunc "||" 1
