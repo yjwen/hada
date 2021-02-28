@@ -108,5 +108,9 @@ package hada;
    function ulongint matchW(ulongint v);
       return v;
    endfunction // matchW
+
+   function bit tagToEnumBool(bit v);
+      return v;
+   endfunction // tagToEnumBool
 endpackage // hada
    

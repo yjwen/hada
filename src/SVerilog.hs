@@ -121,6 +121,7 @@ getExpr (Var v) = justDoc $ getVarExpr v
 getExpr (Lam b exp) = getExpr exp
 getExpr (Case ce v t alts) = getCaseExpr ce alts
 getExpr (Lit (LitNumber _ v _)) = justDoc $ SDocConst $ ppr v
+getExpr (Type t) = justDoc $ literalSDocFunc $ ppr t
 getExpr e = error ("Unexpected expression in getExpr: " ++
                      (showSDocUnsafe $ myPprExpr e))
 
@@ -142,7 +143,7 @@ getVarExpr v
   = getPrimExpr v
   | otherwise
   -- Just a variable, print its name
-  = SDocFunc 0 [Body $ varVId v]
+  = literalSDocFunc $ varVId v
   where vname = getOccString $ varName v
 
 -- | Try to retrieve type and function from a string
@@ -215,14 +216,10 @@ getBuiltInExpr tname fname
 getPrimExpr :: Var -> SDocExpr
 getPrimExpr v
   -- ^ Construct boxed integer values from unboxed ones
-  | vname == "plusWord#"
-  = opPlus
-  | vname == "+#"
-  = opPlus
-  | vname == "-#"
-  = opMinus
-  | vname == "*#"
-  = opMul
+  | vname == "plusWord#" = opPlus
+  | vname == "+#" = opPlus
+  | vname == "-#" = opMinus
+  | vname == "*#" = opMul
   | Just tail <- stripPrefix "narrow" vname
   , Just (_, tail') <- stripAnyPrefix ["8", "16", "32"] tail
   , tail' == "Int#" || tail' == "Word#"
@@ -231,10 +228,20 @@ getPrimExpr v
   | vname == "uncheckedIShiftL#" ||
     vname == "uncheckedShiftL#"
   = opShL
-  | vname == "uncheckedIShiftRA#"
-  = opShRA
-  | vname == "uncheckedShiftRL#"
-  = opShRL
+  | vname == "uncheckedIShiftRA#" = opShRA
+  | vname == "uncheckedShiftRL#" = opShRL
+  | vname == "negateInt#" = opNeg
+  | vname == "tagToEnum#"
+  = SDocFunc maxBound [Body (text "hada::tagToEnum"),
+                       Hole 0 maxBound,
+                       Body lparen,
+                       Hole 1 minBound,
+                       Body rparen]
+  | vname == "==#" = opEq
+  | vname == "andI#" = opBitAnd
+  | vname == "orI#" = opBitOr
+  | vname == "xorI#" = opXor
+  | vname == "notI#" = opBitNeg
   | otherwise = error $ "Unknown prime var " ++ vname
   where vname = getOccString $ getName v
 
@@ -289,6 +296,7 @@ varVId = text . vId . (\v -> (getOccString $ varName v) ++ "_" ++ (show $ varUni
 opComplement = unarySDocFunc "~" 14
 opNot = unarySDocFunc "!" 14
 opNeg = unarySDocFunc "-" 14
+opBitNeg = unarySDocFunc "~" 14
 opMul = binarySDocFunc "*" 10
 opPlus = binarySDocFunc "+" 9
 opMinus = binarySDocFunc "-" 9

@@ -2,7 +2,7 @@ module SDocExpr( SDocExpr(SDocFunc, SDocConst, SDocIdentity)
                , SDocSeg(Body, Hole, Variadic)
                , apply
                , binarySDocFunc, unarySDocFunc, funCallSDocFunc
-               , binarySemiConst,
+               , binarySemiConst, literalSDocFunc
                ) where
 import Prelude hiding ((<>))
 import Data.Word
@@ -35,7 +35,7 @@ data SDocExpr = SDocFunc Int8 [SDocSeg]
               -- SDocExpr
 
 instance Outputable SDocExpr where
-  ppr (SDocFunc _ segs) = cat $ map pprSeg segs
+  ppr (SDocFunc _ segs) = hcat $ map pprSeg segs
   ppr (SDocConst sdoc) = sdoc
 
 updateSeg :: SDocExpr -> SDocSeg -> SDocSeg
@@ -78,3 +78,6 @@ funCallSDocFunc fName = SDocFunc maxBound (Body (text fName <> lparen) : Variadi
 
 binarySemiConst :: String -> Int8 -> SDocExpr
 binarySemiConst op p = SDocFunc p ((Hole 0 p) : (Body (space <> text op <> space)) : (ConstHole 1) : [])
+
+literalSDocFunc :: SDoc -> SDocExpr
+literalSDocFunc lit = SDocFunc maxBound [Body lit]

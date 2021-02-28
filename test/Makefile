@@ -56,5 +56,13 @@ testPrim : TestPrim.hs $(PrimWHS) $(PrimCPPObjs) $(VerilatedObj) $(PrimVLibs)
 runTestPrim : testPrim
 	./$^
 
-runAllTests: testNum testPrim
-	./testNum && ./testPrim
+PrecedenceBinds = negSum mulSum sumSub sumSum eqBand bandXor xorBor
+$(foreach b,$(PrecedenceBinds),$(eval $(call TestRules,$(b),Precedence)))
+
+testPrecedence : TestPrecedence.hs $(PrecedenceWHS) $(PrecedenceCPPObjs) $(VerilatedObj) $(PrecedenceVLibs)
+	ghc -i$(build_dir) $^ -lstdc++ -o $@
+runTestPrecedence : testPrecedence
+	./$^
+
+runAllTests: testNum testPrim testPrecedence
+	./testNum && ./testPrim && ./testPrecedence
