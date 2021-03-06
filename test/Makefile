@@ -64,5 +64,13 @@ testPrecedence : TestPrecedence.hs $(PrecedenceWHS) $(PrecedenceCPPObjs) $(Veril
 runTestPrecedence : testPrecedence
 	./$^
 
-runAllTests: testNum testPrim testPrecedence
-	./testNum && ./testPrim && ./testPrecedence
+CaseBinds = andOrBool
+$(foreach b,$(CaseBinds),$(eval $(call TestRules,$(b),Case)))
+testCase : TestCase.hs $(CaseWHS) $(CaseCPPObjs) $(VerilatedObj) $(CaseVLibs)
+	ghc -i$(build_dir) $^ -lstdc++ -o $@
+runTestCase : testCase
+	./$^
+
+runAllTests: testNum testPrim testPrecedence testCase
+	./testNum && ./testPrim && ./testPrecedence && ./testCase
+

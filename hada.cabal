@@ -19,7 +19,7 @@ Cabal-version:       >=1.10
 
 Executable hada
   Main-is: Main.hs
-  other-modules: MyPpr, SVerilog, Syn, Verilator, SynType, ListX, NameX, SDocExpr
+  other-modules: MyPpr, SVerilog, Syn, Verilator, SynType, SDocExpr, ListX, NameX, TypeX
   Hs-source-dirs: src
   Default-language: Haskell2010
   Build-depends: base >= 4.9, ghc >= 8.0.1, ghc-paths, containers, transformers, filepath, mtl

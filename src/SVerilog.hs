@@ -5,13 +5,15 @@ import MyPpr
 import Syn (collectInputVars)
 import SynType (synType)
 import NameX (moduleStringMaybe, isInModule)
+import TypeX
 import Outputable
 import CoreSyn
 import Name (Name, getOccString, getName, mkSystemVarName, nameUnique, NamedThing)
 import Module (moduleName, moduleNameString)
 import Var (varName, varType, varUnique, Var, mkLocalVar, isLocalVar, isCoVar)
-import Type (Type(..), splitFunTys, getTyVar)
+import Type (Type(..), splitFunTys)
 import TyCon
+import DataCon (dataConRepType, dataConTag)
 import UniqSupply (UniqSM, initUs_, mkSplitUniqSupply, getUniqueM)
 import IdInfo (IdDetails(VanillaId), vanillaIdInfo)
 import FastString (FastString, mkFastString)
@@ -36,6 +38,9 @@ instance Eq Job where
   (==) j0 j1
     | (BindJob v0 df0 e0) <- j0,
       (BindJob v1 df1 e1) <- j1
+    = v0 == v1
+    | (DefJob v0) <- j0,
+      (DefJob v1) <- j1
     = v0 == v1
     | otherwise
     = False
@@ -119,7 +124,7 @@ getExpr (App e arg) = let (j0, stmt0) = getExpr e
                       in (j0 ++ j1, apply stmt0 stmt1)
 getExpr (Var v) = justDoc $ getVarExpr v
 getExpr (Lam b exp) = getExpr exp
-getExpr (Case ce v t alts) = getCaseExpr ce alts
+getExpr (Case ce v t alts) = getCaseExpr ce v t alts
 getExpr (Lit (LitNumber _ v _)) = justDoc $ SDocConst $ ppr v
 getExpr (Type t) = justDoc $ literalSDocFunc $ ppr t
 getExpr e = error ("Unexpected expression in getExpr: " ++
@@ -141,6 +146,10 @@ getVarExpr v
   = opNot
   | isInModule v "GHC.Prim"
   = getPrimExpr v
+  | vname == "True" && isInModule v "GHC.Types" 
+  = literalSDocFunc $ text "1'b1"
+  | vname == "False" && isInModule v "GHC.Types"
+  = literalSDocFunc $ text "1'b0"
   | otherwise
   -- Just a variable, print its name
   = literalSDocFunc $ varVId v
@@ -248,19 +257,54 @@ getPrimExpr v
 -- May add new jobs when converting case expression
 getCaseExpr ::
   CoreExpr -> -- The case expression
+  Var -> -- The bind var
+  Type -> -- The type
   [Alt Var] -> -- The alternative list
   ([Job], SDocExpr)
-getCaseExpr ce ((altcon, vs, e):[]) = addJobs newJobs $ getExpr e -- The last alternative, unconditional
-  where newJobs = ((BindJob vs sdf ce) : (map DefJob vs))
+getCaseExpr ce cv ct ((altcon, vs, e):[])
+  = addJobs newJobs $ getExpr e -- The last alternative, unconditional
+  where newJobs
+          | [] <- vs
+          = [] -- No new jobs as there is no matched vars
+          | otherwise
+          = ((BindJob vs sdf ce) : (map DefJob vs))
         sdf
           | DataAlt datacon <- altcon
           , ofIntCtorName datacon
           = funCallSDocFunc ("hada::match" ++ (init $ getOccString $ getName datacon))
           | otherwise
           = SDocIdentity
+getCaseExpr ce cv ct ((altcon, vs, e):moreAlts)
+  = (jc ++ jt ++ jf, condExpr cond true false)
+  where cond = SDocFunc 0 [Body (matchKey cv <+> text "==" <+> matchValue altcon)]
+        jc = [BindJob [cv] SDocIdentity ce, DefJob cv]
+        (jt, true) = getExpr e
+        (jf, false) = getCaseExpr ce cv ct moreAlts
 
-getCaseExpr _ _ = error "Unsupported case expression"
+-- Derive the pattern match key from a variable
+matchKey :: Var -> SDoc
+matchKey v
+  | isBoolType $ varType v
+  -- Matching againt a Bool, the var itself is the key.
+  = varVId v
+  | otherwise
+  = error $ "Unknown match key for variable " ++ (getOccString v)
+  where vtype = varType v
 
+-- Derive the pattern matching value from an alternative constructor
+matchValue :: AltCon -> SDoc
+matchValue altcon
+  | DataAlt dataCon <- altcon
+  , isBoolType $ dataConRepType dataCon
+  = case dataConTag dataCon of
+      0 -> text "1'b1" -- True
+      _ -> text "1'b0" -- False
+
+
+condExpr :: SDocExpr -> SDocExpr -> SDocExpr -> SDocExpr
+condExpr cond true false = SDocFunc 0 [Body (ppr cond <+> text "?" <+>
+                                             ppr true <+> text ":" <+>
+                                             ppr false)]
 
 -- | Convert any string having character other than a-z, A-Z, 0-9 and
 -- _ to escaped Verilog Identifier.
