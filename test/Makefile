@@ -34,43 +34,33 @@ $(2)CPPObjs += $(build_dir)/W$(1).cpp.o
 $(2)WHS += $(build_dir)/W$(1).hs
 endef
 
+# $1: Test suite name
+# $2: Binds
+define testSuite
+$$(foreach b,$(2),$$(eval $$(call TestRules,$$(b),$(1))))
+$(1)FirstBind := $$(firstword $(2))
+$(1)VerilatedObj := $$(build_dir)/$$($(1)FirstBind)/verilated.o
+$$($(1)VerilatedObj) : $$(build_dir)/$$($(1)FirstBind)/V$$($(1)FirstBind)__ALL.a
+	$(MAKE) -C $$(build_dir)/$$($(1)FirstBind) -f V$$($(1)FirstBind).mk verilated.o
+test$(1) : Test$(1).hs $$($(1)WHS) $$($(1)CPPObjs) $$($(1)VerilatedObj) $$($(1)VLibs)
+	ghc -i$(build_dir) $$^ -lstdc++ -o $$@
+runTest$(1) : test$(1)
+	@echo "Testing $(1):" && ./$$^
+RunAllTestSuites += $$(runTest$(1))
+endef
+
 NumBinds = plus minus mul neg abs_ sig eq neq lt le gt ge band bor bxor bneg
 NumBinds += $(foreach d,U 8 U8 16 U16 32 U32 64 U64,plus$(d) minus$(d) mul$(d) neg$(d) abs$(d) sig$(d) eq$(d) neq$(d) lt$(d) le$(d) gt$(d) ge$(d) band$(d) bor$(d) bxor$(d) bneg$(d))
-$(foreach b,$(NumBinds),$(eval $(call TestRules,$(b),Num)))
-
-FirstBind := $(firstword $(NumBinds))
-VerilatedObj := $(build_dir)/$(FirstBind)/verilated.o
-$(VerilatedObj) : $(build_dir)/$(FirstBind)/V$(FirstBind)__ALL.a
-	$(MAKE) -C $(build_dir)/$(FirstBind) -f V$(FirstBind).mk verilated.o
-
-testNum : TestNum.hs $(NumWHS) $(NumCPPObjs) $(VerilatedObj) $(NumVLibs)
-	ghc -i$(build_dir) $^ -lstdc++ -o $@
-runTestNum : testNum
-	./$^
+$(eval $(call testSuite,Num,$(NumBinds)))
 
 PrimBinds = $(subst _,,$(foreach d,_ U 8 U8 16 U16 32 U32 64 U64,plusOne$(d) lshc$(d) rshc$(d)))
-$(foreach b,$(PrimBinds),$(eval $(call TestRules,$(b),Prim)))
-
-testPrim : TestPrim.hs $(PrimWHS) $(PrimCPPObjs) $(VerilatedObj) $(PrimVLibs)
-	ghc -i$(build_dir) $^ -lstdc++ -o $@
-runTestPrim : testPrim
-	./$^
+$(eval $(call testSuite,Prim,$(PrimBinds)))
 
 PrecedenceBinds = negSum mulSum sumSub sumSum eqBand bandXor xorBor
-$(foreach b,$(PrecedenceBinds),$(eval $(call TestRules,$(b),Precedence)))
-
-testPrecedence : TestPrecedence.hs $(PrecedenceWHS) $(PrecedenceCPPObjs) $(VerilatedObj) $(PrecedenceVLibs)
-	ghc -i$(build_dir) $^ -lstdc++ -o $@
-runTestPrecedence : testPrecedence
-	./$^
+$(eval $(call testSuite,Precedence,$(PrecedenceBinds)))
 
 CaseBinds = andOrBool
-$(foreach b,$(CaseBinds),$(eval $(call TestRules,$(b),Case)))
-testCase : TestCase.hs $(CaseWHS) $(CaseCPPObjs) $(VerilatedObj) $(CaseVLibs)
-	ghc -i$(build_dir) $^ -lstdc++ -o $@
-runTestCase : testCase
-	./$^
+$(eval $(call testSuite,Case,$(CaseBinds)))
 
-runAllTests: testNum testPrim testPrecedence testCase
-	./testNum && ./testPrim && ./testPrecedence && ./testCase
+runAllTests: $(RunAllTestSuites)
 
