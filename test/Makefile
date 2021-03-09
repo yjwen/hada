@@ -1,4 +1,5 @@
 build_dir = build
+cache_dir = cache
 HADA-BIN = ../dist-newstyle/build/x86_64-linux/ghc-8.8.4/hada-0.1.0.0/x/hada/build/hada/hada
 
 VERILATOR ?= $(shell which verilator)
@@ -12,9 +13,6 @@ ifeq ($(VERILATOR-CFLAGS),)
 $(error Cannot determine C flags for compiling verilated CPP source. Please specify the necessary C flags to VERILATOR-CFLAGS)
 endif
 
-$(build_dir):
-	mkdir $<
-
 HADA-PACKAGE := ../lib/hada.sv
 # $1: Bind name
 # $2: Test name
@@ -23,14 +21,19 @@ HADA-PACKAGE := ../lib/hada.sv
 #  $(2)CPPObjs: Collection of the object files for each bind
 #  $(2)WHS: Collection of the wrapper Haskell file for each bind
 define TestRules
-$(build_dir)/$1.sv $(build_dir)/W$1.cpp $(build_dir)/W$1.hs : $2.hs $(HADA-BIN) $(build_dir)
+$(build_dir)/$1.sv $(build_dir)/W$1.cpp $(build_dir)/W$1.hs : $2.hs $(HADA-BIN)
+	@[[ -e $(build_dir) ]] || mkdir $(build_dir)
 	$(HADA-BIN) $$< -o $(build_dir)/$1.sv -w $(build_dir)/W$1 -t $1
-$(build_dir)/$1/V$(1)__ALL.a $(build_dir)/$1/V$1.h: $(HADA-PACKAGE) $(build_dir)/$1.sv $(build_dir)/W$1.cpp
-	$(VERILATOR) -cc --build -sv --Mdir $$(dir $$@) --prefix V$1 $$^ 
-$(build_dir)/W$1.cpp.o: $(build_dir)/W$1.cpp $(build_dir)/$1/V$1.h
+$(cache_dir)/$1/V$(1)__ALL.a $(cache_dir)/$1/V$1.h: $(HADA-PACKAGE) $(build_dir)/$1.sv
+	@[[ -e $(cache_dir) ]] || mkdir $(cache_dir)
+	@if [ -e $(cache_dir)/$1.sv ] && diff $(cache_dir)/$1.sv $(build_dir)/$1.sv; \
+	then echo "Using cached files for $1"; \
+	else echo "Verilating $1" && $(VERILATOR) -cc --build -sv --Mdir $$(dir $$@) --prefix V$1 $$(filter-out $(cache_dir),$$^) && cp $(build_dir)/$1.sv $(cache_dir)/$1.sv; \
+	fi
+$(cache_dir)/W$1.cpp.o: $(build_dir)/W$1.cpp $(cache_dir)/$1/V$1.h
 	$(CXX) $(VERILATOR-CFLAGS) -I./$(build_dir)/$1 -c $$< -o $$@
-$(2)VLibs += $(build_dir)/$1/V$(1)__ALL.a
-$(2)CPPObjs += $(build_dir)/W$(1).cpp.o
+$(2)VLibs += $(cache_dir)/$1/V$(1)__ALL.a
+$(2)CPPObjs += $(cache_dir)/W$(1).cpp.o
 $(2)WHS += $(build_dir)/W$(1).hs
 endef
 
@@ -46,7 +49,7 @@ test$(1) : Test$(1).hs $$($(1)WHS) $$($(1)CPPObjs) $$($(1)VerilatedObj) $$($(1)V
 	ghc -i$(build_dir) $$^ -lstdc++ -o $$@
 runTest$(1) : test$(1)
 	@echo "Testing $(1):" && ./$$^
-RunAllTestSuites += $$(runTest$(1))
+allTestSuites += test$(1)
 endef
 
 NumBinds = plus minus mul neg abs_ sig eq neq lt le gt ge band bor bxor bneg
@@ -62,5 +65,6 @@ $(eval $(call testSuite,Precedence,$(PrecedenceBinds)))
 CaseBinds = andOrBool
 $(eval $(call testSuite,Case,$(CaseBinds)))
 
-runAllTests: $(RunAllTestSuites)
+runAllTests: $(allTestSuites)
+	@: $(foreach t,$(allTestSuites), && echo "Testing: $(subst test,,$(t))" && ./$(t))
 
