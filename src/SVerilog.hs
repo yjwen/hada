@@ -22,6 +22,8 @@ import Literal
 import Data.List
 import ListX (stripAnyPrefix)
 import SDocExpr
+import SDocLine
+import Job
 
 toSV :: CoreBind -> IO (SDoc, Var)
 toSV (NonRec b e) = toVModule b e
@@ -45,10 +47,6 @@ instance Eq Job where
     | otherwise
     = False
 
-type Progress = ( [Job] -- Jobs undone
-                , SDoc -- SV statements done
-                )
-
 -- Return the translated Verilog SDoc, and the created output var for
 -- wrapper files
 toVModule :: CoreBndr -> CoreExpr -> IO (SDoc, Var)
@@ -62,7 +60,7 @@ toVModule b e =
               parens (vcat $ punctuate (text ", ")  ((outputDef vo):(map inputDef vis))) <> semi
               $+$
               -- Body
-              nest 2 (doAllJobs [] ([BindJob [vo] SDocIdentity e], empty))
+              nest 2 (getSDocLine (doAllJobs synInModule ([BindJob [vo] SDocIdentity e], SDocLine empty)))
               $+$
               text "endmodule")
             , vo)
@@ -87,30 +85,19 @@ mkAutoVar vname vtype = do n <- newUniqueName vname
                            return $ mkLocalVar VanillaId n vtype vanillaIdInfo
 
 
--- | Do all jobs in progress and return the resulted SV statements
-doAllJobs :: [Job] -> Progress -> SDoc
-doAllJobs doneJobs ((j:jobs), doc) 
-  | elem j doneJobs = doAllJobs doneJobs (jobs, doc) -- j already done. Search more
-  | otherwise = doAllJobs (j:doneJobs) $ doJob j (jobs, doc)
-doAllJobs _ ([], doc) = doc -- No job remain. All done
-
--- | Do one job and update progress. SV statements will be
--- updated. Undone jobs may be updated as well if more jobs are
--- discovered when doing this job.
-doJob :: Job -> Progress -> Progress
-doJob (BindJob vs docfunc e)
+-- | Synthesize in-module declarations and statements
+synInModule :: Job -> ([Job], SDocLine)
+synInModule (BindJob vs docfunc e)
   = let (js, stmt) = getExpr e
-    in (addJobs js) . (addStmt (text "always_comb" <+> bindLHS vs <+> text "=" <+> ppr (apply docfunc stmt) <> semi))
+        combStmt = text "always_comb" <+> bindLHS vs <+> text "=" <+> ppr (apply docfunc stmt) <> semi
+    in (js, SDocLine combStmt)
   -- Assuming the binder can always be implemented by combinational
   -- logic
-doJob (DefJob v) = addStmt (varDef v <+> varVId v <> semi)
+synInModule (DefJob v) = ([], SDocLine (varDef v <+> varVId v <> semi))
 
 bindLHS :: [Var] -> SDoc
 bindLHS (v:[]) = varVId v -- Only one var
 bindLHS vs = braces $ pprWithCommas varVId vs
-
-addStmt :: SDoc -> Progress -> Progress
-addStmt stmt (j, stmtDone) = (j, stmt $+$ stmtDone)
 
 justDoc :: SDocExpr -> ([Job], SDocExpr)
 justDoc sdoc = ([], sdoc)

@@ -31,7 +31,7 @@ $(cache_dir)/$1/V$(1)__ALL.a $(cache_dir)/$1/V$1.h: $(HADA-PACKAGE) $(build_dir)
 	else echo "Verilating $1" && $(VERILATOR) -cc --build -sv --Mdir $$(dir $$@) --prefix V$1 $$(filter-out $(cache_dir),$$^) && cp $(build_dir)/$1.sv $(cache_dir)/$1.sv; \
 	fi
 $(cache_dir)/W$1.cpp.o: $(build_dir)/W$1.cpp $(cache_dir)/$1/V$1.h
-	$(CXX) $(VERILATOR-CFLAGS) -I./$(build_dir)/$1 -c $$< -o $$@
+	$(CXX) $(VERILATOR-CFLAGS) -I./$(cache_dir)/$1 -c $$< -o $$@
 $(2)VLibs += $(cache_dir)/$1/V$(1)__ALL.a
 $(2)CPPObjs += $(cache_dir)/W$(1).cpp.o
 $(2)WHS += $(build_dir)/W$(1).hs
@@ -42,9 +42,9 @@ endef
 define testSuite
 $$(foreach b,$(2),$$(eval $$(call TestRules,$$(b),$(1))))
 $(1)FirstBind := $$(firstword $(2))
-$(1)VerilatedObj := $$(build_dir)/$$($(1)FirstBind)/verilated.o
-$$($(1)VerilatedObj) : $$(build_dir)/$$($(1)FirstBind)/V$$($(1)FirstBind)__ALL.a
-	$(MAKE) -C $$(build_dir)/$$($(1)FirstBind) -f V$$($(1)FirstBind).mk verilated.o
+$(1)VerilatedObj := $$(cache_dir)/$$($(1)FirstBind)/verilated.o
+$$($(1)VerilatedObj) : $$(cache_dir)/$$($(1)FirstBind)/V$$($(1)FirstBind)__ALL.a
+	$(MAKE) -C $$(cache_dir)/$$($(1)FirstBind) -f V$$($(1)FirstBind).mk verilated.o
 test$(1) : Test$(1).hs $$($(1)WHS) $$($(1)CPPObjs) $$($(1)VerilatedObj) $$($(1)VLibs)
 	ghc -i$(build_dir) $$^ -lstdc++ -o $$@
 runTest$(1) : test$(1)
