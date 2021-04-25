@@ -65,6 +65,10 @@ $(eval $(call testSuite,Precedence,$(PrecedenceBinds)))
 CaseBinds = andOrBool
 $(eval $(call testSuite,Case,$(CaseBinds)))
 
+testTopoGraph : TestTopoGraph.hs ../src/TopoGraph.hs
+	ghc $^ -o $@
+runTestTopoGraph : testTopoGraph
+	@echo "Testing TopoGraph:" && ./$^
 runAllTests: $(allTestSuites)
 	@: $(foreach t,$(allTestSuites), && echo "Testing: $(subst test,,$(t))" && ./$(t))
 
