@@ -1,17 +1,34 @@
-module TopoGraph (isTopoFirst) where
+module TopoGraph (isTopoFree, findTopoFirst) where
 
 import Algebra.Graph (Graph(..), hasVertex)
 
--- | isTopoFirst x g == true if there is no edge y→x (y /= x) exists
--- in graph g. Note for x that is not a node in g, isTopoFirst x g ==
--- true. And for a node x that exists in g and has only incoming edge
--- x→x, isTopoFirst x g == true.
-isTopoFirst :: (Eq a) => a -> Graph a -> Bool
-isTopoFirst a Empty = True
-isTopoFirst a (Vertex b) = True
-isTopoFirst a (Overlay left  right) = isTopoFirst a left && isTopoFirst a right
-isTopoFirst a (Connect left Empty) = isTopoFirst a left
-isTopoFirst a (Connect left right) = isTopoFirst a left && (not $ hasVertex a right)
+-- | isTopoFree x g == true if there is no edge y→x (y /= x) exists in
+-- graph g. Note any node that is not a node in g is a topo-free node
+-- to g. And a node x∈g that has only incoming edge x→x is also
+-- topo-free to g
+isTopoFree :: (Eq a) => a -> Graph a -> Bool
+isTopoFree a Empty = True
+isTopoFree a (Vertex b) = True
+isTopoFree a (Overlay left  right) = isTopoFree a left && isTopoFree a right
+isTopoFree a (Connect left Empty) = isTopoFree a left
+isTopoFree a (Connect left right) = isTopoFree a left && (not $ hasVertex a right)
+
+-- | findTopoFirst g tries to find a node x∈g that is topo-free to g
+-- If no such node is found, return Nothing, otherwise return Just x.
+findTopoFirst :: (Eq a) => Graph a -> Maybe a
+findTopoFirst g = findTopoFirst' g Empty
+
+-- | findTopoFirst' g g' tries to find a node x∈g that is topo-free to
+-- both g and g'. If no such node is found, return Nothing, otherwise
+-- return Just x
+findTopoFirst' :: (Eq a) => Graph a -> Graph a -> Maybe a
+findTopoFirst' Empty _ = Nothing
+findTopoFirst' (Vertex b) g' = if isTopoFree b g' then Just b else Nothing
+findTopoFirst' (Overlay left right) g' =
+  case findTopoFirst' left (Overlay right g') of
+    Just a -> Just a
+    Nothing -> findTopoFirst' right (Overlay left g')
+findTopoFirst' (Connect left right) g' = findTopoFirst' left (Connect g' right)
 
 -- -- | topoFold tries to fold a graph in topological order. When there
 -- -- is a edge x→y in the graph, x is always folded before y. If x

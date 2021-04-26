@@ -16,26 +16,47 @@ v_loop2_v = overlay (edges [(2, 0), (1, 3)]) loop2
 
 
 
-testIsTopoFirst :: Graph Int -> [Bool] -> Test
-testIsTopoFirst g goldens
-  = TestCase $ assertEqual "" goldens (map (\n -> isTopoFirst n g) nodes)
+testIsTopoFree :: Graph Int -> [Bool] -> Test
+testIsTopoFree g goldens
+  = TestCase $ assertEqual "" goldens (map (\n -> isTopoFree n g) nodes)
   where nodes = take (1 + vertexCount g) (iterate (+1) 0)
 
-isTopoFirstTests = TestList [
-  testIsTopoFirst empty [True],
-  testIsTopoFirst oneV [True, True],
-  testIsTopoFirst oneE [True, False, True],
-  testIsTopoFirst loop [False, True],
-  testIsTopoFirst island [True, True, True],
-  testIsTopoFirst path2 [True, False, False, True],
-  testIsTopoFirst loop2 [False, False, True],
-  testIsTopoFirst converge2 [True, False, True, True],
-  testIsTopoFirst diverge2 [True, False, False, True],
-  testIsTopoFirst v_loop_v [False, True, False, True],
-  testIsTopoFirst v_loop2_v [False, False, True, False, True]]
+isTopoFreeTests = TestList [
+  testIsTopoFree empty [True],
+  testIsTopoFree oneV [True, True],
+  testIsTopoFree oneE [True, False, True],
+  testIsTopoFree loop [False, True],
+  testIsTopoFree island [True, True, True],
+  testIsTopoFree path2 [True, False, False, True],
+  testIsTopoFree loop2 [False, False, True],
+  testIsTopoFree converge2 [True, False, True, True],
+  testIsTopoFree diverge2 [True, False, False, True],
+  testIsTopoFree v_loop_v [False, True, False, True],
+  testIsTopoFree v_loop2_v [False, False, True, False, True]]
 
+testFindTopoFirst :: Graph Int -> [Int] -> Test
+testFindTopoFirst g candidates
+  = TestCase (case result of
+                Just a -> assertBool msg (a `elem` candidates)
+                Nothing -> assertBool msg (candidates == []))
+  where result = findTopoFirst g
+        msg = "Found " ++ show result ++ ", but candidates are " ++ show candidates
+findTopoFirstTests =
+  TestList [ testFindTopoFirst empty []
+           , testFindTopoFirst oneV [0]
+           , testFindTopoFirst oneE [0]
+           , testFindTopoFirst loop []
+           , testFindTopoFirst island [0, 1]
+           , testFindTopoFirst path2 [0]
+           , testFindTopoFirst loop2 []
+           , testFindTopoFirst converge2 [0, 2]
+           , testFindTopoFirst diverge2 [0]
+           , testFindTopoFirst v_loop_v [1]
+           , testFindTopoFirst v_loop2_v [2]]
 
-allTests = TestList [TestLabel "isTopoFirst" $ isTopoFirstTests]
+allTests = TestList [ TestLabel "isTopoFree" $ isTopoFreeTests
+                    , TestLabel "findTopoFirst" $ findTopoFirstTests
+                    ]
 
 
 main = do counts <- runTestTT allTests
