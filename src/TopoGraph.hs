@@ -28,7 +28,13 @@ findTopoFirst' (Overlay left right) g' =
   case findTopoFirst' left (Overlay right g') of
     Just a -> Just a
     Nothing -> findTopoFirst' right (Overlay left g')
-findTopoFirst' (Connect left right) g' = findTopoFirst' left (Connect g' right)
+findTopoFirst' (Connect left right) g' =  findTopoFirst' left newg'
+  where newg' = case left of 
+                  Vertex a -> g'
+                  -- When left is Vertex a, a is always a topo-first
+                  -- node even it exists in right, which indicates a
+                  -- self-looping edge a→a
+                  otherwise -> (Connect g' right)
 
 -- -- | topoFold tries to fold a graph in topological order. When there
 -- -- is a edge x→y in the graph, x is always folded before y. If x

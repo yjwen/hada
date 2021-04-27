@@ -45,7 +45,7 @@ findTopoFirstTests =
   TestList [ testFindTopoFirst empty []
            , testFindTopoFirst oneV [0]
            , testFindTopoFirst oneE [0]
-           , testFindTopoFirst loop []
+           , testFindTopoFirst loop [0]
            , testFindTopoFirst island [0, 1]
            , testFindTopoFirst path2 [0]
            , testFindTopoFirst loop2 []
