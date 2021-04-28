@@ -1,6 +1,8 @@
 import Test.HUnit
 import System.Exit
-import Algebra.Graph (Graph, vertexCount, empty, vertex, vertices, edge, edges, overlay)
+import Algebra.Graph ( Graph, vertexCount, empty, vertex, vertices, edge, edges, overlay
+                     , edgeList)
+import Data.List (nub)
 import TopoGraph
 
 oneV = vertex 0
@@ -35,12 +37,13 @@ isTopoFreeTests = TestList [
   testIsTopoFree v_loop2_v [False, False, True, False, True]]
 
 testFindTopoFirst :: Graph Int -> [Int] -> Test
-testFindTopoFirst g candidates
-  = TestCase (case result of
-                Just a -> assertBool msg (a `elem` candidates)
-                Nothing -> assertBool msg (candidates == []))
+testFindTopoFirst g candidates =
+  TestCase (case result of
+              Just a -> assertBool msg (a `elem` candidates)
+              Nothing -> assertBool msg (candidates == []))
   where result = findTopoFirst g
         msg = "Found " ++ show result ++ ", but candidates are " ++ show candidates
+
 findTopoFirstTests =
   TestList [ testFindTopoFirst empty []
            , testFindTopoFirst oneV [0]
@@ -54,8 +57,36 @@ findTopoFirstTests =
            , testFindTopoFirst v_loop_v [1]
            , testFindTopoFirst v_loop2_v [2]]
 
+-- | An edge x→y is in a topo list l when both x and y are in l, and x
+-- appears before y.
+hasEdge :: [Int] -> (Int, Int) -> Assertion
+hasEdge l (x, y) = assertBool msg (y `elem` dropWhile (/= x) l)
+  where msg = ("Edge " ++ show (x, y) ++ " is not in topo list " ++ show l)
+
+testTopoFoldl :: Graph Int -> [(Int, Int)] -> [(Int, Int)] -> Test
+testTopoFoldl g topoEdges cyclicEdges =
+  let (topoList, cyclicGraph) = topoFoldl (flip (:)) [] g
+  in TestCase (do assertEqual "Duplicated topoList" (nub topoList) topoList
+                  mapM (hasEdge topoList) topoEdges
+                  assertEqual "" cyclicEdges (edgeList cyclicGraph))
+
+topoFoldlTests = TestList [ testTopoFoldl empty [] []
+                          , testTopoFoldl oneV [(0, 0)] []
+                          , testTopoFoldl oneE [(1, 0)] []
+                          , testTopoFoldl loop [(0, 0)] []
+                          , testTopoFoldl island [(0, 0), (1, 1)] []
+                          , testTopoFoldl path2 [(2, 1), (1, 0)] []
+                          , testTopoFoldl loop2 [] [(0, 1), (1, 0)]
+                          , testTopoFoldl converge2 [(1, 0), (1, 2)] []
+                          , testTopoFoldl diverge2 [(1, 0), (2, 0)] []
+                          , testTopoFoldl v_loop_v [(2, 0), (0, 1)] []
+                          , testTopoFoldl v_loop2_v [(2, 2)] [(0, 1), (1, 0), (1, 3)]
+                          ]
+  
+
 allTests = TestList [ TestLabel "isTopoFree" $ isTopoFreeTests
                     , TestLabel "findTopoFirst" $ findTopoFirstTests
+                    , TestLabel "topoFoldlTests" $ topoFoldlTests
                     ]
 
 

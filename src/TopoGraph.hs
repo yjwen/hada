@@ -1,6 +1,6 @@
-module TopoGraph (isTopoFree, findTopoFirst) where
+module TopoGraph (isTopoFree, findTopoFirst, topoFoldl) where
 
-import Algebra.Graph (Graph(..), hasVertex)
+import Algebra.Graph (Graph(..), hasVertex, removeVertex)
 
 -- | isTopoFree x g == true if there is no edge y→x (y /= x) exists in
 -- graph g. Note any node that is not a node in g is a topo-free node
@@ -36,36 +36,39 @@ findTopoFirst' (Connect left right) g' =  findTopoFirst' left newg'
                   -- self-looping edge a→a
                   otherwise -> (Connect g' right)
 
--- -- | topoFold tries to fold a graph in topological order. When there
--- -- is a edge x→y in the graph, x is always folded before y. If x
--- -- and y are not connected by any path, which node is folded first is
--- -- undetermined. topoFold stops when no node can be folded in the
--- -- graph and returns the folded value and the sub-graph of unfolded
--- -- nodes.
--- --
--- -- If the graph is acyclic, all nodes will be folded and an empty
--- -- graph is returned. For example, for a graph g as below:
--- --
--- -- 1→2→3
--- --   ↑
--- --   4
--- --
--- -- topoFold [] (:) g may return ([1, 4, 2, 3], empty) or ([4, 1, 2,
--- -- 3], empty), depending on the detail algebraic structure of g.
--- --
--- -- If the graph is cyclic, all foldable nodes are folded and the
--- -- unfoldable part of the graph is returned. For example, for a graph
--- -- g as below:
--- --
--- -- 1→2→3→6
--- --   ↑ ↓
--- --   4←5
--- --
--- -- topoFold [] (:) g returns ([1], g'), where g' is the sub-graph of g
--- -- consisting node 2, 3, 4, 5 and 6. Note that not only those nodes
--- -- forming cycles are unfoldable, but also those "blocked" by cycles,
--- -- like 6 in the above example.
--- topoFold :: Eq a => b -> (a -> b -> b) -> Graph a -> (b, Graph a)
--- topoFold b _ Empty -> (b, Empty)
--- topoFold b f (Vertex a) -> (f a b, Empty)
-
+-- | topoFoldl tries to fold a graph in topological order. When there
+-- is a edge x→y in the graph, x is always folded before y. If x and y
+-- are not connected by any path, which node is folded first is
+-- undetermined. topoFoldl stops when no node can be folded in the
+-- graph and returns the folded value and the sub-graph of unfolded
+-- nodes.
+--
+-- If the graph is acyclic, all nodes will be folded and an empty
+-- graph is returned. For example, for a graph g as below:
+--
+-- 1→2→3
+--   ↑
+--   4
+--
+-- topoFoldl (flip (:)) [] g may return ([3, 2, 4, 1], empty) or ([3,
+-- 2, 1, 4], empty), depending on the detail algebraic structure of g.
+--
+-- If the graph is cyclic, all foldable nodes are folded and the
+-- unfoldable part of the graph is returned. For example, for a graph
+-- g as below:
+--
+-- 1→2→3→6
+--   ↑ ↓
+--   4←5
+--
+-- topoFoldl (flip (:)) [] g returns ([1], g'), where g' is the
+-- sub-graph of g consisting node 2, 3, 4, 5 and 6. Note that not only
+-- those nodes forming cycles are unfoldable, but also those "blocked"
+-- by cycles, like 6 in the above example.
+topoFoldl :: Eq a => (b -> a -> b) -> b -> Graph a -> (b, Graph a)
+topoFoldl f b Empty = (b, Empty)
+topoFoldl f b (Vertex a) = ((f b a), Empty)
+topoFoldl f b g =
+  case findTopoFirst g of
+    Just a -> topoFoldl f (f b a) (removeVertex a g)
+    Nothing -> (b, g)
