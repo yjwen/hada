@@ -1,5 +1,6 @@
 module TopoGraph ( isTopoFirst, isTopoLast
                  , findTopoFirst, findTopoLast
+                 , findTopoFirstTrue, findTopoLastTrue
                  , topoFoldl, topoFoldr) where
 
 import Algebra.Graph (Graph(..), hasVertex, removeVertex)
@@ -27,41 +28,53 @@ isTopoLast a (Connect left right) = isTopoLast a right && (not $ hasVertex a lef
 -- | findTopoFirst g tries to find a node x∈g that is topo-first to g.
 -- If no such node is found, return Nothing, otherwise return Just x.
 findTopoFirst :: (Eq a) => Graph a -> Maybe a
-findTopoFirst g = findTopoFirst' g Empty
+findTopoFirst = findTopoFirstTrue (const True)
+
+-- | findTopoFirstTrue f g tries to find a node x∈g that is topo-first
+-- to g and f x == True.  If no such node is found, return Nothing,
+-- otherwise return Just x.
+findTopoFirstTrue :: (Eq a) => (a -> Bool) -> Graph a -> Maybe a
+findTopoFirstTrue f g = findTopoFirstTrue' f g Empty
 
 -- | findTopoLast g tries to find a node x∈g that is topo-last to
 -- g. If no such node is found, return Nothing, otherwise return Just
 -- x
 findTopoLast :: (Eq a) => Graph a -> Maybe a
-findTopoLast g = findTopoLast' g Empty
+findTopoLast = findTopoLastTrue (const True)
 
--- | findTopoFirst' g g' tries to find a node x∈g that is topo-first to
--- both g and g'. If no such node is found, return Nothing, otherwise
--- return Just x
-findTopoFirst' :: (Eq a) => Graph a -> Graph a -> Maybe a
-findTopoFirst' Empty _ = Nothing
-findTopoFirst' (Vertex b) g' = if isTopoFirst b g' then Just b else Nothing
-findTopoFirst' (Overlay left right) g' =
-  case findTopoFirst' left (Overlay right g') of
+-- | findTopoLastTrue f g tries to find a node x∈g that is topo-last
+-- to g and f x == True. If no such node is found, return Nothing,
+-- otherwise return Just x.
+findTopoLastTrue :: (Eq a) => (a -> Bool) -> Graph a -> Maybe a
+findTopoLastTrue f g = findTopoLastTrue' f g Empty
+
+-- | findTopoFirstTrue' f g g' tries to find a node x∈g that is
+-- topo-first to both g and g', and f x == True. If no such node is
+-- found, return Nothing, otherwise return Just x
+findTopoFirstTrue' :: (Eq a) => (a-> Bool) -> Graph a -> Graph a -> Maybe a
+findTopoFirstTrue' _ Empty _ = Nothing
+findTopoFirstTrue' f (Vertex b) g' = if isTopoFirst b g' && f b then Just b else Nothing
+findTopoFirstTrue' f (Overlay left right) g' =
+  case findTopoFirstTrue' f left (Overlay right g') of
     Just a -> Just a
-    Nothing -> findTopoFirst' right (Overlay left g')
-findTopoFirst' (Connect left right) g' =  findTopoFirst' left newg'
+    Nothing -> findTopoFirstTrue' f right (Overlay left g')
+findTopoFirstTrue' f (Connect left right) g' =  findTopoFirstTrue' f left newg'
   where newg' = case left of 
                   Vertex a -> g'
                   -- When left is Vertex a, a is always a topo-first
                   -- node even it exists in right, which indicates a
                   -- self-looping edge a→a
                   otherwise -> (Connect g' right)
--- | findTopoLast' g g' tries to find a node x∈g that is topo-last to
--- both g and g'.
-findTopoLast' :: (Eq a) => Graph a -> Graph a -> Maybe a
-findTopoLast' Empty _ = Nothing
-findTopoLast' (Vertex b) g' = if isTopoLast b g' then Just b else Nothing
-findTopoLast' (Overlay left right) g' =
-  case findTopoLast' left (Overlay right g') of
+-- | findTopoLastTrue' f g g' tries to find a node x∈g that is topo-last to
+-- both g and g', and f x == True.
+findTopoLastTrue' :: (Eq a) => (a -> Bool) -> Graph a -> Graph a -> Maybe a
+findTopoLastTrue' f Empty _ = Nothing
+findTopoLastTrue' f (Vertex b) g' = if isTopoLast b g' && f b then Just b else Nothing
+findTopoLastTrue' f (Overlay left right) g' =
+  case findTopoLastTrue' f left (Overlay right g') of
     Just a -> Just a
-    Nothing -> findTopoLast' right (Overlay left g')
-findTopoLast' (Connect left right) g' = findTopoLast' right newg'
+    Nothing -> findTopoLastTrue' f right (Overlay left g')
+findTopoLastTrue' f (Connect left right) g' = findTopoLastTrue' f right newg'
   where newg' = case right of
                   Vertex a -> g'
                   otherwise -> (Connect left g')

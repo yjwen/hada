@@ -62,6 +62,8 @@ testFindTopo f g candidates =
 
 testFindTopoFirst = testFindTopo findTopoFirst
 testFindTopoLast = testFindTopo findTopoLast
+testFindTopoFirstTrue = testFindTopo (findTopoFirstTrue even)
+testFindTopoLastTrue = testFindTopo (findTopoLastTrue even)
 
 findTopoFirstTests =
   TestList [ testFindTopoFirst empty []
@@ -76,6 +78,19 @@ findTopoFirstTests =
            , testFindTopoFirst v_loop_v [1]
            , testFindTopoFirst v_loop2_v [2]]
 
+findTopoFirstTrueTests =
+  TestList [ testFindTopoFirstTrue empty []
+           , testFindTopoFirstTrue oneV [0]
+           , testFindTopoFirstTrue oneE [0]
+           , testFindTopoFirstTrue loop [0]
+           , testFindTopoFirstTrue island [0]
+           , testFindTopoFirstTrue path2 [0]
+           , testFindTopoFirstTrue loop2 []
+           , testFindTopoFirstTrue converge2 [0]
+           , testFindTopoFirstTrue diverge2 [0]
+           , testFindTopoFirstTrue v_loop_v []
+           , testFindTopoFirstTrue v_loop2_v [2]]
+
 findTopoLastTests =
   TestList [ testFindTopoLast empty []
            , testFindTopoLast oneV [0]
@@ -88,6 +103,19 @@ findTopoLastTests =
            , testFindTopoLast diverge2 [1, 2]
            , testFindTopoLast v_loop_v [2]
            , testFindTopoLast v_loop2_v [3]]
+
+findTopoLastTrueTests =
+  TestList [ testFindTopoLastTrue empty []
+           , testFindTopoLastTrue oneV [0]
+           , testFindTopoLastTrue oneE []
+           , testFindTopoLastTrue loop [0]
+           , testFindTopoLastTrue island [0]
+           , testFindTopoLastTrue path2 [2]
+           , testFindTopoLastTrue loop2 []
+           , testFindTopoLastTrue converge2 []
+           , testFindTopoLastTrue diverge2 [2]
+           , testFindTopoLastTrue v_loop_v [2]
+           , testFindTopoLastTrue v_loop2_v []]
 
 -- | An edge x→y is in a topo list l when both x and y are in l, and x
 -- appears before y.
@@ -138,7 +166,9 @@ topoFoldrTests = TestList [ testTopoFoldr empty [] []
 allTests = TestList [ TestLabel "isTopoFirst" $ isTopoFirstTests
                     , TestLabel "isTopoLast" $ isTopoLastTests
                     , TestLabel "findTopoFirst" $ findTopoFirstTests
+                    , TestLabel "findTopoFirstTrue" $ findTopoFirstTrueTests
                     , TestLabel "findTopoLast" $ findTopoLastTests
+                    , TestLabel "findTopoLastTrue" $ findTopoLastTrueTests
                     , TestLabel "topoFoldlTests" $ topoFoldlTests
                     , TestLabel "topoFoldrTests" $ topoFoldrTests
                     ]
