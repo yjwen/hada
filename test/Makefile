@@ -69,6 +69,12 @@ testTopoGraph : TestTopoGraph.hs ../src/TopoGraph.hs
 	ghc $^ -o $@
 runTestTopoGraph : testTopoGraph
 	@echo "Testing TopoGraph:" && ./$^
+
+testJobGraph : TestJobGraph.hs ../src/JobGraph.hs ../src/TopoGraph.hs
+	ghc $^ -o $@
+runTestJobGraph : testJobGraph
+	@echo "Testing JobGraph:" && ./$^
+
 runAllTests: $(allTestSuites)
 	@: $(foreach t,$(allTestSuites), && echo "Testing: $(subst test,,$(t))" && ./$(t))
 
