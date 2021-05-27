@@ -24,6 +24,8 @@ import ListX (stripAnyPrefix)
 import SDocExpr
 import SDocLine
 import Job
+import Data.Bits (finiteBitSize)
+import Data.Maybe (isJust)
 
 toSV :: CoreBind -> IO (SDoc, Var)
 toSV (NonRec b e) = toVModule b e
@@ -117,12 +119,19 @@ getExpr (Type t) = justDoc $ literalSDocFunc $ ppr t
 getExpr e = error ("Unexpected expression in getExpr: " ++
                      (showSDocUnsafe $ myPprExpr e))
 
+-- Return the integer name of give byte-width
+svIntName :: Int -> String
+svIntName 1 = "byte"
+svIntName 2 = "shortint"
+svIntName 4 = "int"
+svIntName _ = "longint" -- Assuming 4 bytes
+
 getVarExpr :: Var -> SDocExpr
 getVarExpr v
   | Just (tname, fname) <- splitBuiltinTypeFuncMaybe vname
   = getBuiltInExpr tname fname
-  | ofIntCtorName v
-  = funCallSDocFunc ("hada::cons" ++ init vname)
+  | Just bw <- ofIntCtorName v
+  = funCallSDocFunc (svIntName bw ++ "'")
   -- logical and/or
   | vname == "||" 
   = opOr
@@ -166,18 +175,25 @@ splitBuiltinTypeFuncMaybe n
 
 -- | Whether the name of something is one of the builtin integer type
 -- constructors of I#, I8#, I16#, I32#, I64# in GHC.Int and W#, W8#,
--- W16#, W32#, W64# in GHC.Word
-ofIntCtorName :: NamedThing a => a -> Bool
+-- W16#, W32#, W64# in GHC.Word. If so, return the integer's
+-- byte-width. Otherwise, return Nothing
+ofIntCtorName :: NamedThing a => a -> Maybe Int
 ofIntCtorName thing
   | Just s <- moduleStringMaybe thing,
     s `elem` ["GHC.Types", "GHC.Int", "GHC.Word"]
-  = case stripAnyPrefix ["I", "W"] nstr of
-      Just (_, tail0) -> case stripAnyPrefix ["64", "32", "16", "8", ""] tail0 of
-                           Just (_, tail1) -> tail1 == "#"
-                           otherwise -> False
-      otherwise -> False
+  = case getOccString $ getName thing of
+      (s:ss) -> if s == 'I' || s == 'W'
+                then case ss of
+                       "#" -> Just (finiteBitSize (0::Int) `quot` 8)
+                       "8#" -> Just 1
+                       "16#" -> Just 2
+                       "32#" -> Just 4
+                       "64#" -> Just 8
+                       otherwise -> Nothing
+                else Nothing
+      otherwise -> Nothing
   | otherwise
-  = False
+  = Nothing
   where nstr = getOccString $ getName thing
 
 getBuiltInExpr :: String -> String -> SDocExpr
@@ -257,8 +273,8 @@ getCaseExpr ce cv ct ((altcon, vs, e):[])
           = ((BindJob vs sdf ce) : (map DefJob vs))
         sdf
           | DataAlt datacon <- altcon
-          , ofIntCtorName datacon
-          = funCallSDocFunc ("hada::match" ++ (init $ getOccString $ getName datacon))
+          , isJust $ ofIntCtorName datacon
+          = funCallSDocFunc "longint'"
           | otherwise
           = SDocIdentity
 getCaseExpr ce cv ct ((altcon, vs, e):moreAlts)
