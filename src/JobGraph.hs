@@ -16,13 +16,13 @@ type JobGraph j r = Graph (Either j r) -- j the Job type, r the result type
 job :: j -> JobGraph j r
 job  = vertex . Left
 
-jedge :: j -> j -> JobGraph j r
-jedge j j' = edge (Left j) (Left j')
+jedge :: r -> j -> JobGraph j r
+jedge r j = edge (Right r) (Left j)
 
 redge :: j -> r -> JobGraph j r
 redge j r = edge (Left j) (Right r)
 
-addJob :: j -> j -> (JobGraph j r) -> (JobGraph j r)
+addJob :: r -> j -> (JobGraph j r) -> (JobGraph j r)
 addJob j j' = overlay (jedge j j')
 
 addResult :: j -> r -> (JobGraph j r) -> (JobGraph j r)
@@ -42,7 +42,7 @@ doAllJobs uf g =
   case findTodoJob g of
     Nothing -> g -- No to-do job. All done. 
     Just j -> doAllJobs uf g'
-      where g' = foldl (&) g (map (addJob j) newjs) & addResult j r
+      where g' = foldl (&) g (map (addJob r) newjs) & addResult j r
             (newjs, r) = uf j
     
 
