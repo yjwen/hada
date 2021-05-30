@@ -1,8 +1,11 @@
-module JobGraph (JobGraph, job, jedge, redge,
-                 addJob, addResult, findTodoJob, doAllJobs) where
+module JobGraph ( JobGraph, job, jedge, redge
+                , addJob, addResult, findTodoJob, doAllJobs
+                , jobTopoFoldl, jobTopoFoldr
+                , resultTopoFoldl, resultTopoFoldr
+                ) where
 
 import Algebra.Graph (Graph(..), vertex, overlay, edge)
-import TopoGraph (findTopoLastTrue)
+import TopoGraph (findTopoLastTrue, topoFoldr, topoFoldl)
 import Data.Either(isLeft)
 import Data.Function((&))
 
@@ -46,3 +49,26 @@ doAllJobs uf g =
             (newjs, r) = uf j
     
 
+-- topoFoldl on jobs only
+jobTopoFoldl :: (Eq j, Eq r) => (b -> j -> b) -> b -> JobGraph j r -> (b, JobGraph j r)
+jobTopoFoldl f = topoFoldl ff
+  where ff b (Left j) = f b j
+        ff b (Right _) = b
+
+-- topoFoldr on jobs only
+jobTopoFoldr :: (Eq j, Eq r) => (j -> b -> b) -> b -> JobGraph j r -> (b, JobGraph j r)
+jobTopoFoldr f = topoFoldr ff
+  where ff (Left j) b = f j b
+        ff (Right _) b = b
+
+-- topoFoldl on results only
+resultTopoFoldl :: (Eq j, Eq r) => (b -> r -> b) -> b -> JobGraph j r -> (b, JobGraph j r)
+resultTopoFoldl f = topoFoldl ff
+  where ff b (Left j) = b
+        ff b (Right r) = f b r
+
+-- topoFoldr on results only
+resultTopoFoldr :: (Eq j, Eq r) => (r -> b -> b) -> b -> JobGraph j r -> (b, JobGraph j r)
+resultTopoFoldr f = topoFoldr ff
+  where ff (Left j) b = b
+        ff (Right r) b = f r b

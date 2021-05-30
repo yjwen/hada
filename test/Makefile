@@ -65,12 +65,12 @@ $(eval $(call testSuite,Precedence,$(PrecedenceBinds)))
 CaseBinds = andOrBool
 $(eval $(call testSuite,Case,$(CaseBinds)))
 
-testTopoGraph : TestTopoGraph.hs ../src/TopoGraph.hs
+testTopoGraph : TestTopoGraph.hs TopoList.hs ../src/TopoGraph.hs
 	ghc $^ -o $@
 runTestTopoGraph : testTopoGraph
 	@echo "Testing TopoGraph:" && ./$^
 
-testJobGraph : TestJobGraph.hs ../src/JobGraph.hs ../src/TopoGraph.hs
+testJobGraph : TestJobGraph.hs TopoList.hs ../src/JobGraph.hs ../src/TopoGraph.hs
 	ghc $^ -o $@
 runTestJobGraph : testJobGraph
 	@echo "Testing JobGraph:" && ./$^

@@ -4,6 +4,7 @@ import Algebra.Graph ( Graph, vertexCount, empty, vertex, vertices, edge, edges,
                      , edgeList)
 import Data.List (nub)
 import TopoGraph
+import TopoList(assertTopoListEq)
 
 oneV = vertex 0
 oneE = edge 0 1
@@ -117,17 +118,11 @@ findTopoLastTrueTests =
            , testFindTopoLastTrue v_loop_v [2]
            , testFindTopoLastTrue v_loop2_v []]
 
--- | An edge x→y is in a topo list l when both x and y are in l, and x
--- appears before y.
-hasEdge :: [Int] -> (Int, Int) -> Assertion
-hasEdge l (x, y) = assertBool msg (y `elem` dropWhile (/= x) l)
-  where msg = ("Edge " ++ show (x, y) ++ " is not in topo list " ++ show l)
-
 testTopoFoldl :: Graph Int -> [(Int, Int)] -> [(Int, Int)] -> Test
 testTopoFoldl g topoEdges cyclicEdges =
   let (topoList, cyclicGraph) = topoFoldl (flip (:)) [] g
   in TestCase (do assertEqual "Duplicated topoList" (nub topoList) topoList
-                  mapM (hasEdge topoList) topoEdges
+                  assertTopoListEq topoList topoEdges
                   assertEqual "" cyclicEdges (edgeList cyclicGraph))
 
 topoFoldlTests = TestList [ testTopoFoldl empty [] []
@@ -148,7 +143,7 @@ testTopoFoldr :: Graph Int -> [(Int, Int)] -> [(Int, Int)] -> Test
 testTopoFoldr g topoEdges cyclicEdges =
   let (topoList, cyclicGraph) = topoFoldr (:) [] g
   in TestCase (do assertEqual "Duplicated topoList" (nub topoList) topoList
-                  mapM (hasEdge topoList) topoEdges
+                  assertTopoListEq topoList topoEdges
                   assertEqual ""  cyclicEdges (edgeList cyclicGraph))
 
 topoFoldrTests = TestList [ testTopoFoldr empty [] []
