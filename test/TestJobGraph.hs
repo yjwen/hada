@@ -1,39 +1,85 @@
 import Test.HUnit
 import System.Exit
-import Algebra.Graph (Graph, edgeList)
+import Algebra.Graph (Graph, edgeList, vertexList)
 import JobGraph
 import TopoList(assertTopoListEq)
 
-doJob :: Int -> ([Int], String)
-doJob j = (if j > 5 then [] else [j + 1, j * 2 + 1], show j)
+doJob :: Int -> Int -> ([Int], String)
+doJob t j = (if j >= t then [] else [j + 1, j * 2 + 1], show j)
 
+
+initJG = initTodo 0
+
+testDoAllJobs0 = TestCase (assertEqual
+                           ""
+                           [ExactJR (done 0 "0")]
+                           (map ExactJR $ vertexList $ doAllJobs (doJob 0) initJG))
+testDoAllJobs1 = TestCase (assertEqual
+                           ""
+                           [exactEdge (done 0 "0", done 1 "1")]
+                           (map exactEdge $ edgeList $ doAllJobs (doJob 1) initJG))
+
+testDoAllJobs2 = TestCase (assertEqual
+                           ""
+                           (map exactEdge [(done 0 "0", done 1 "1"),
+                                           (done 1 "1", done 2 "2"),
+                                           (done 1 "1", done 3 "3")])
+                           (map exactEdge $ edgeList $ doAllJobs (doJob 2) initJG))
+
+testDoAllJobs3 = TestCase (assertEqual
+                           ""
+                           (map exactEdge [(done 0 "0", done 1 "1"),
+                                           (done 1 "1", done 2 "2"),
+                                           (done 1 "1", done 3 "3"),
+                                           (done 2 "2", done 3 "3"),
+                                           (done 2 "2", done 5 "5")])
+                           (map exactEdge $ edgeList $ doAllJobs (doJob 3) initJG))
+
+testDoAllJobs4 = TestCase (assertEqual
+                           ""
+                           (map exactEdge [(done 0 "0", done 1 "1"),
+                                           (done 1 "1", done 2 "2"),
+                                           (done 1 "1", done 3 "3"),
+                                           (done 2 "2", done 3 "3"),
+                                           (done 2 "2", done 5 "5"),
+                                           (done 3 "3", done 4 "4"),
+                                           (done 3 "3", done 7 "7")])
+                           (map exactEdge $ edgeList $ doAllJobs (doJob 4) initJG))
+
+testDoAllJobs5 = TestCase (assertEqual
+                           ""
+                           (map exactEdge [(done 0 "0", done 1 "1"),
+                                           (done 1 "1", done 2 "2"),
+                                           (done 1 "1", done 3 "3"),
+                                           (done 2 "2", done 3 "3"),
+                                           (done 2 "2", done 5 "5"),
+                                           (done 3 "3", done 4 "4"),
+                                           (done 3 "3", done 7 "7"),
+                                           (done 4 "4", done 5 "5"),
+                                           (done 4 "4", done 9 "9")])
+                           (map exactEdge $ edgeList $ doAllJobs (doJob 5) initJG))
+
+testDoAllJobs6 = TestCase (assertEqual
+                           ""
+                           (map exactEdge [(done 0 "0", done 1 "1"),
+                                           (done 1 "1", done 2 "2"),
+                                           (done 1 "1", done 3 "3"),
+                                           (done 2 "2", done 3 "3"),
+                                           (done 2 "2", done 5 "5"),
+                                           (done 3 "3", done 4 "4"),
+                                           (done 3 "3", done 7 "7"),
+                                           (done 4 "4", done 5 "5"),
+                                           (done 4 "4", done 9 "9"),
+                                           (done 5 "5", done 6 "6"),
+                                           (done 5 "5", done 11 "11")])
+                           (map exactEdge $ edgeList $ doAllJobs (doJob 6) initJG))
 -- The example job graph used by tests
-jg = doAllJobs doJob $ job 0
+jg = doAllJobs (doJob 6) $ initTodo 0
 
-jobGraphTest = TestCase (assertEqual ""
-                         [ (Left 0, Right "0")
-                         , (Left 1, Right "1")
-                         , (Left 2, Right "2")
-                         , (Left 3, Right "3")
-                         , (Left 4, Right "4")
-                         , (Left 5, Right "5")
-                         , (Left 6, Right "6")
-                         , (Left 7, Right "7")
-                         , (Left 9, Right "9")
-                         , (Left 11, Right "11")
-                         , (Right "0", Left 1)
-                         , (Right "1", Left 2)
-                         , (Right "1", Left 3)
-                         , (Right "2", Left 3)
-                         , (Right "2", Left 5)
-                         , (Right "3", Left 4)
-                         , (Right "3", Left 7)
-                         , (Right "4", Left 5)
-                         , (Right "4", Left 9)
-                         , (Right "5", Left 6)
-                         , (Right "5", Left 11)
-                         ]
-                          (edgeList jg))
+type R = JobRecord Int String
+type ExactR = ExactJR Int String
+exactEdge :: (R, R) -> (ExactR, ExactR)
+exactEdge (r0, r1) = (ExactJR r0, ExactJR r1)
 
 jobTopoFoldlTest = let (topoList, cyclicGraph) = jobTopoFoldl (flip (:)) [] jg
                    in TestCase (do assertTopoListEq topoList [ (1, 0)
@@ -82,7 +128,13 @@ resultTopoFoldrTest = let (topoList, cyclicGraph) = resultTopoFoldr (:) [] jg
                                                                 ]
                                       assertEqual "" [] (edgeList cyclicGraph))
 
-main = do counts <- runTestTT $ TestList [ jobGraphTest
+main = do counts <- runTestTT $ TestList [ testDoAllJobs0
+                                         , testDoAllJobs1
+                                         , testDoAllJobs2
+                                         , testDoAllJobs3
+                                         , testDoAllJobs4
+                                         , testDoAllJobs5
+                                         , testDoAllJobs6
                                          , jobTopoFoldlTest
                                          , jobTopoFoldrTest
                                          , resultTopoFoldlTest
