@@ -128,6 +128,12 @@ resultTopoFoldrTest = let (topoList, cyclicGraph) = resultTopoFoldr (:) [] jg
                                                                 ]
                                       assertEqual "" [] (edgeList cyclicGraph))
 
+testMustSetDone = TestCase (assertEqual
+                            ""
+                            [ExactJR (todo 0),
+                             ExactJR (done 1 "1")]
+                            (map ExactJR $ vertexList (mustSetDone 1 "1" (initTodo 0))))
+
 main = do counts <- runTestTT $ TestList [ testDoAllJobs0
                                          , testDoAllJobs1
                                          , testDoAllJobs2
@@ -139,6 +145,7 @@ main = do counts <- runTestTT $ TestList [ testDoAllJobs0
                                          , jobTopoFoldrTest
                                          , resultTopoFoldlTest
                                          , resultTopoFoldrTest
+                                         , testMustSetDone
                                          ]
           if errors counts > 0 || failures counts > 0
             then exitFailure

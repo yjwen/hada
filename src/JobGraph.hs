@@ -5,7 +5,7 @@ module JobGraph ( JobRecord(..), ExactJR(..)
                 , initTodo
                 , getResult
                 , hasDone
-                , addTodo, setDone
+                , addTodo, setDone, mustSetDone
                 , findTodoJob, doAllJobs
                 , jobTopoFoldl, jobTopoFoldr
                 , resultTopoFoldl, resultTopoFoldr
@@ -85,9 +85,16 @@ addTodo jr j g = case getResult j g of
                    Nothing -> overlay g (edge jr (todo j))
                    Just r -> overlay g (edge jr (done j r))
 
--- Set the job as done with a result in job graph
+-- Set the job as done with a result in job graph, assuming there MUST
+-- be a todo j in the graph
 setDone :: Eq j => j -> r -> JobGraph j r -> JobGraph j r
 setDone j r = replaceVertex (todo j) (done j r)
+
+-- Set the job as done with a result in job graph even if such job
+-- doesn't exist yet
+mustSetDone :: Eq j => j -> r -> JobGraph j r -> JobGraph j r
+mustSetDone j r = replaceVertex (todo j) doneJ . overlay (vertex doneJ)
+  where doneJ = done j r
 
 -- Regarding a job j is done if an edge j→k exists in the job graph,
 -- a to-do jobs is equivalent to a topo-last job.
