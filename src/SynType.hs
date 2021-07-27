@@ -1,5 +1,5 @@
 -- Type related synthesizing
-module SynType (SynType, synType, cppr, hsppr) where
+module SynType (SynType, synType, showSV, showC, showHS) where
 import Prelude hiding ((<>))
 import NameX(isInModule)
 import Type (Type, splitTyConApp_maybe)
@@ -55,45 +55,53 @@ builtinType n
   | n == "Word#" = SynInt MachineInt False
   | otherwise = error ("Unknown builtin type: " ++ n)
 
-signess True = empty
-signess False = text "unsigned"
+-- SV representations
+appendSignSV :: Bool -> String -> String
+appendSignSV True = id
+appendSignSV False = (++ " unsigned")
 
-instance Outputable SynType where
-  ppr (SynInt MachineInt s) = text (if (maxBound::Word) == 0xFFFFFFFF
-                                     -- 32 bit machine
-                                     then "int"
-                                     else "longint") <+> signess s
-  ppr (SynInt SByte s) = text "byte" <+> signess s
-  ppr (SynInt DByte s) = text "shortint" <+> signess s
-  ppr (SynInt QByte s) = text "int" <+> signess s
-  ppr (SynInt OByte s) = text "longint" <+> signess s
-  ppr SynBit = text "bit"
+showBitWidthSV :: BitWidth -> String
+showBitWidthSV MachineInt = if (maxBound::Word) == 0xFFFFFFFF
+                            then "int" -- 32 bit machine
+                            else "longint"
+showBitWidthSV SByte = "byte"
+showBitWidthSV DByte = "shortint"
+showBitWidthSV QByte = "int"
+showBitWidthSV OByte = "longint"
 
-csigness True = empty
-csigness False = char 'u'
+showSV (SynInt bw s) = appendSignSV s $ showBitWidthSV bw
+showSV SynBit = "bit"
 
--- For ppr syn types as C types
-cppr :: SynType -> SDoc
-cppr (SynInt MachineInt s) = csigness s <> text (if (maxBound::Word) == 0xFFFFFFFF
-                                                  -- 32 bit machine
-                                                  then "int32_t"
-                                                  else "int64_t")
-cppr (SynInt SByte s) = csigness s <> text "int8_t"
-cppr (SynInt DByte s) = csigness s <> text "int16_t"
-cppr (SynInt QByte s) = csigness s <> text "int32_t"
-cppr (SynInt OByte s) = csigness s <> text "int64_t"
-cppr SynBit = text "bool"
+appendSignC :: Bool -> String -> String
+appendSignC True = id
+appendSignC False = ('u':)
 
--- For ppr syn types back as Haskell types
-hsppr :: SynType -> SDoc
-hsppr (SynInt MachineInt s) = text $ case s of True -> "Int"
-                                               False -> "Word"
-hsppr (SynInt SByte s) = text $ case s of True -> "Int8"
-                                          False -> "Word8"
-hsppr (SynInt DByte s) = text $ case s of True -> "Int16"
-                                          False -> "Word16"
-hsppr (SynInt QByte s) = text $ case s of True -> "Int32"
-                                          False -> "Word32"
-hsppr (SynInt OByte s) = text $ case s of True -> "Int64"
-                                          False -> "Word64"
-hsppr SynBit = text "Bool"
+-- C representation
+showBitWidthC :: BitWidth -> String
+showBitWidthC MachineInt = if (maxBound::Word) == 0xFFFFFFFF
+                           then "int32_t" -- 32 bit machine
+                           else "int64_t"
+showBitWidthC SByte = "int8_t"
+showBitWidthC DByte = "int16_t"
+showBitWidthC QByte = "int32_t"
+showBitWidthC OByte = "int64_t"
+
+showC :: SynType -> String
+showC (SynInt bw s) = appendSignC s $ showBitWidthC bw
+showC SynBit = "bool"
+
+-- HS representation
+showBitWidthHS :: BitWidth -> String
+showBitWidthHS MachineInt = ""
+showBitWidthHS SByte = "8"
+showBitWidthHS DByte = "16"
+showBitWidthHS QByte = "32"
+showBitWidthHS OByte = "64"
+
+showSignHS :: Bool -> String
+showSignHS True = "Int"
+showSignHS False = "Word"
+
+showHS :: SynType -> String
+showHS (SynInt bw s) = showSignHS s ++ showBitWidthHS bw
+showHS SynBit = "Bool"

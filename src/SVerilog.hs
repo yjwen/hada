@@ -3,10 +3,14 @@ module SVerilog (toSV) where
 import Prelude hiding ((<>))
 import MyPpr
 import Syn (collectInputVars)
-import SynType (synType)
+import SynType (synType, showSV)
 import NameX (moduleStringMaybe, isInModule)
 import TypeX
-import Outputable
+import VHText (VHText(..), rightSep, vcatAll, hcat, vcat, indent)
+import TextExpr
+import JobGraph
+
+import qualified Outputable as O
 import CoreSyn
 import Name (Name, getOccString, getName, mkSystemVarName, nameUnique, NamedThing)
 import Module (moduleName, moduleNameString)
@@ -21,62 +25,67 @@ import Literal
 
 import Data.List
 import ListX (stripAnyPrefix)
-import SDocExpr
-import SDocLine
-import Job
 import Data.Bits (finiteBitSize)
 import Data.Maybe (isJust)
+import Algebra.Graph (overlay, isEmpty)
 
-toSV :: CoreBind -> IO (SDoc, Var)
+-- Convert a CoreBind to a SVerilog module, represented by VHText, and
+-- the module's output signal, represented by a Var
+toSV :: CoreBind -> IO (VHText, Var)
 toSV (NonRec b e) = toVModule b e
 toSV (Rec bs) = error "Recursive bindings"
 
--- | A job is to convert a haskell syntax to SV statement
-data Job = BindJob [Var] SDocExpr CoreExpr
-           -- For printing a bind of vars to expression, optionally
-           -- wrapped by a SDocExpr
-         | DefJob Var
+-- | A mobule job is to convert a haskell bind syntax to SV statement
+data ModuleJob = BindJob [Var] CoreExpr
+                 -- For printing a bind of vars to expression
+               | DefJob Var
            
 
-instance Eq Job where
-  (==) j0 j1
-    | (BindJob v0 df0 e0) <- j0,
-      (BindJob v1 df1 e1) <- j1
-    = v0 == v1
-    | (DefJob v0) <- j0,
-      (DefJob v1) <- j1
-    = v0 == v1
-    | otherwise
-    = False
+instance Eq ModuleJob where
+  (BindJob v0 _) == (BindJob v1 _) = v0 == v1
+  (DefJob v0) == (DefJob v1) = v0 == v1
+  j0 == j1 = False
 
--- Return the translated Verilog SDoc, and the created output var for
--- wrapper files
-toVModule :: CoreBndr -> CoreExpr -> IO (SDoc, Var)
+type ModuleJobGraph = JobGraph ModuleJob VHText
+
+-- Translate a CoreBind, which has been splitted into a CoreBndr and a
+-- CoreExpr into SVerilog text, formatted in VHText, and the created
+-- output var for wrapper files
+toVModule :: CoreBndr -> CoreExpr -> IO (VHText, Var)
 toVModule b e =
   do us <- mkSplitUniqSupply 'a'
      let (_, otype) = splitFunTys $ varType b
          vo = initUs_ us $ mkAutoVar (mkFastString "o") otype
          vis = collectInputVars e
-     return ((text "module" <+> ppr b <+>
-              -- Port definition
-              parens (vcat $ punctuate (text ", ")  ((outputDef vo):(map inputDef vis))) <> semi
-              $+$
-              -- Body
-              nest 2 (getSDocLine (doAllJobs synInModule ([BindJob [vo] SDocIdentity e], SDocLine empty)))
-              $+$
-              text "endmodule")
-            , vo)
+         head = Text ("module " ++ getOccString b ++ "(")
+                `hcat`
+                -- Port definition
+                rightSep "," (vcatAll (outputDef vo:map inputDef vis))
+                `hcat`
+                Text ");"
+         -- Initial job graph. Contains one to-do BindJob and one done
+         -- DefJob for the output variable. The DefJob has empty
+         -- result as the output variable is already defined in the
+         -- port list.
+         initJG = vertexTodo (BindJob [vo] e) `overlay`
+                  vertexDone (DefJob vo) Empty
+         doneJG = doAllJobs synInModule initJG
+         (body, remain) = resultTopoFoldr (flip vcat) Empty doneJG
+     return (if isEmpty remain
+              then (head `vcat` indent 2 body `vcat` Text "endmodule",
+                    vo)
+              else error "Cyclic dependency found on module body")
 
 -- | Generate the output port definition
-outputDef :: Var -> SDoc
-outputDef v = text "output" <+> varDef v <+> varVId v
+outputDef :: Var -> VHText
+outputDef v = Text ("output " ++ varDef v ++ " " ++ varVId v)
 
 -- | Generate the input port definition
-inputDef :: Var -> SDoc
-inputDef v = text "input" <+> varDef v <+> varVId v
+inputDef :: Var -> VHText
+inputDef v = Text ("input " ++ varDef v ++ " " ++ varVId v)
 
-varDef :: Var -> SDoc
-varDef = ppr . synType . varType
+varDef :: Var -> String
+varDef = showSV . synType . varType
 
 newUniqueName :: FastString -> UniqSM Name
 newUniqueName str = do u <- getUniqueM
@@ -88,37 +97,44 @@ mkAutoVar vname vtype = do n <- newUniqueName vname
 
 
 -- | Synthesize in-module declarations and statements
-synInModule :: Job -> ([Job], SDocLine)
-synInModule (BindJob vs docfunc e)
+synInModule :: ModuleJob -> ([ModuleJob], VHText)
+synInModule (BindJob vs e)
   = let (js, stmt) = getExpr e
-        combStmt = text "always_comb" <+> bindLHS vs <+> text "=" <+> ppr (apply docfunc stmt) <> semi
-    in (js, SDocLine combStmt)
+        combStmt = Text ("always_comb " ++ concatSV (map varVId vs) ++ " = " ++
+                         showCommon stmt ++ ";")
+    in (map DefJob vs ++ js, combStmt)
   -- Assuming the binder can always be implemented by combinational
   -- logic
-synInModule (DefJob v) = ([], SDocLine (varDef v <+> varVId v <> semi))
+synInModule (DefJob v) = ([], Text (varDef v ++ " " ++ varVId v ++ ";"))
 
-bindLHS :: [Var] -> SDoc
-bindLHS (v:[]) = varVId v -- Only one var
-bindLHS vs = braces $ pprWithCommas varVId vs
+concatSV :: [String] -> String
+concatSV (s:[]) = s -- Only one var
+concatSV s = "{" ++ intercalate ", " s ++ "}"
 
-justDoc :: SDocExpr -> ([Job], SDocExpr)
-justDoc sdoc = ([], sdoc)
+justExpr :: TextExpr -> ([ModuleJob], TextExpr)
+justExpr expr = ([], expr)
 
-addJobs :: [Job] -> ([Job], a) -> ([Job], a)
-addJobs js (jobs, v) = (js ++ jobs, v)
+addJobs :: [ModuleJob] -> ([ModuleJob], a) -> ([ModuleJob], a)
+addJobs js (jobs, expr) = (js ++ jobs, expr)
 
-getExpr :: CoreExpr -> ([Job], SDocExpr)
+getExpr :: CoreExpr -> ([ModuleJob], TextExpr)
 getExpr (App e arg) = let (j0, stmt0) = getExpr e
                           (j1, stmt1) = getExpr arg
                       in (j0 ++ j1, apply stmt0 stmt1)
-getExpr (Var v) = justDoc $ getVarExpr v
+getExpr (Var v) = justExpr $ getVarExpr v
 getExpr (Lam b exp) = getExpr exp
 getExpr (Case ce v t alts) = getCaseExpr ce v t alts
-getExpr (Lit (LitNumber _ v _)) = justDoc $ SDocConst $ ppr v
-getExpr (Type t) = justDoc $ literalSDocFunc $ ppr t
+getExpr (Lit (LitNumber _ v _)) = justExpr $ LeafExpr $ show v
+getExpr (Lit lit) = if lit == castLongintLit
+                    then justExpr $ Func "longint'" []
+                         -- Built-in case function acting as the rhs
+                         -- equivalent of integer data constructors.
+                    else error $ "Unknown literal " ++ O.showSDocUnsafe (O.ppr lit)
+getExpr (Type t) = justExpr $ LeafExpr $ O.showSDocUnsafe $ O.ppr t
 getExpr e = error ("Unexpected expression in getExpr: " ++
-                     (showSDocUnsafe $ myPprExpr e))
+                     (O.showSDocUnsafe $ myPprExpr e))
 
+castLongintLit = mkLitString "longint'"
 -- Return the integer name of give byte-width
 svIntName :: Int -> String
 svIntName 1 = "byte"
@@ -126,12 +142,12 @@ svIntName 2 = "shortint"
 svIntName 4 = "int"
 svIntName _ = "longint" -- Assuming 4 bytes
 
-getVarExpr :: Var -> SDocExpr
+getVarExpr :: Var -> TextExpr
 getVarExpr v
   | Just (tname, fname) <- splitBuiltinTypeFuncMaybe vname
   = getBuiltInExpr tname fname
   | Just bw <- ofIntCtorName v
-  = funCallSDocFunc (svIntName bw ++ "'")
+  = Func (svIntName bw ++ "'") []
   -- logical and/or
   | vname == "||" 
   = opOr
@@ -143,12 +159,12 @@ getVarExpr v
   | isInModule v "GHC.Prim"
   = getPrimExpr v
   | vname == "True" && isInModule v "GHC.Types" 
-  = literalSDocFunc $ text "1'b1"
+  = LeafExpr "1'b1"
   | vname == "False" && isInModule v "GHC.Types"
-  = literalSDocFunc $ text "1'b0"
+  = LeafExpr "1'b0"
   | otherwise
   -- Just a variable, print its name
-  = literalSDocFunc $ varVId v
+  = LeafExpr $ varVId v
   where vname = getOccString $ varName v
 
 -- | Try to retrieve type and function from a string
@@ -196,18 +212,18 @@ ofIntCtorName thing
   = Nothing
   where nstr = getOccString $ getName thing
 
-getBuiltInExpr :: String -> String -> SDocExpr
+getBuiltInExpr :: String -> String -> TextExpr
 getBuiltInExpr tname fname
   | fname == "+" = opPlus
   | fname == "-" = opMinus
   | fname == "*" = opMul
   | fname == "negate" = opNeg
   | fname == "abs" = if "Int" `isPrefixOf` tname
-                     then funCallSDocFunc ("hada::abs" ++ (autoWidthStr $ drop 3 tname))
-                     else SDocIdentity
-  | fname == "signum" = if "Int" `isPrefixOf` tname
-                        then funCallSDocFunc ("hada::signum" ++ (autoWidthStr $ drop 3 tname))
-                        else funCallSDocFunc ("hada::signumU" ++ (autoWidthStr $ drop 4 tname))
+                     then Func ("hada::abs" ++ (autoWidthStr $ drop 3 tname)) []
+                     else Identity
+  | fname == "signum" = Func (if "Int" `isPrefixOf` tname
+                              then "hada::signum" ++ (autoWidthStr $ drop 3 tname)
+                              else "hada::signumU" ++ (autoWidthStr $ drop 4 tname)) []
   | fname == "eq" = opEq
   | fname == "ne" = opNe
   | fname == "lt" = opLt
@@ -225,7 +241,7 @@ getBuiltInExpr tname fname
                                     else "64"
                               otherwise -> str
 
-getPrimExpr :: Var -> SDocExpr
+getPrimExpr :: Var -> TextExpr
 getPrimExpr v
   -- ^ Construct boxed integer values from unboxed ones
   | vname == "plusWord#" = opPlus
@@ -236,7 +252,7 @@ getPrimExpr v
   , Just (_, tail') <- stripAnyPrefix ["8", "16", "32"] tail
   , tail' == "Int#" || tail' == "Word#"
   -- Narrowing functions, ignored as the narrowing is done by the "hada::ctor" functions
-  = SDocIdentity
+  = Identity
   | vname == "uncheckedIShiftL#" ||
     vname == "uncheckedShiftL#"
   = opShL
@@ -244,11 +260,7 @@ getPrimExpr v
   | vname == "uncheckedShiftRL#" = opShRL
   | vname == "negateInt#" = opNeg
   | vname == "tagToEnum#"
-  = SDocFunc maxBound [Body (text "hada::tagToEnum"),
-                       Hole 0 maxBound,
-                       Body lparen,
-                       Hole 1 minBound,
-                       Body rparen]
+  = MetaFunc"hada::tagToEnum"
   | vname == "==#" = opEq
   | vname == "andI#" = opBitAnd
   | vname == "orI#" = opBitOr
@@ -263,51 +275,51 @@ getCaseExpr ::
   Var -> -- The bind var
   Type -> -- The type
   [Alt Var] -> -- The alternative list
-  ([Job], SDocExpr)
+  ([ModuleJob], TextExpr)
 getCaseExpr ce cv ct ((altcon, vs, e):[])
   = addJobs newJobs $ getExpr e -- The last alternative, unconditional
   where newJobs
           | [] <- vs
           = [] -- No new jobs as there is no matched vars
           | otherwise
-          = ((BindJob vs sdf ce) : (map DefJob vs))
-        sdf
+          = [BindJob vs ce']
+        ce'
           | DataAlt datacon <- altcon
           , isJust $ ofIntCtorName datacon
-          = funCallSDocFunc "longint'"
+          = App (Lit (mkLitString "longint'")) ce
           | otherwise
-          = SDocIdentity
+          = ce
+
 getCaseExpr ce cv ct ((altcon, vs, e):moreAlts)
-  = (jc ++ jt ++ jf, condExpr cond true false)
-  where cond = SDocFunc 0 [Body (matchKey cv <+> text "==" <+> matchValue altcon)]
-        jc = [BindJob [cv] SDocIdentity ce, DefJob cv]
+  = (jc : (jt ++ jf), condExpr cond true false)
+  where cond = matchKey cv ++ " == " ++ matchValue altcon
+        jc = BindJob [cv] ce
         (jt, true) = getExpr e
         (jf, false) = getCaseExpr ce cv ct moreAlts
 
--- Derive the pattern match key from a variable
-matchKey :: Var -> SDoc
+-- Derive the pattern matching key from a variable
+matchKey :: Var -> String
 matchKey v
   | isBoolType $ varType v
   -- Matching againt a Bool, the var itself is the key.
   = varVId v
   | otherwise
   = error $ "Unknown match key for variable " ++ (getOccString v)
-  where vtype = varType v
 
 -- Derive the pattern matching value from an alternative constructor
-matchValue :: AltCon -> SDoc
+matchValue :: AltCon -> String
 matchValue altcon
   | DataAlt dataCon <- altcon
   , isBoolType $ dataConRepType dataCon
   = case dataConTag dataCon of
-      0 -> text "1'b1" -- True
-      _ -> text "1'b0" -- False
+      0 -> "1'b1" -- True
+      _ -> "1'b0" -- False
 
 
-condExpr :: SDocExpr -> SDocExpr -> SDocExpr -> SDocExpr
-condExpr cond true false = SDocFunc 0 [Body (ppr cond <+> text "?" <+>
-                                             ppr true <+> text ":" <+>
-                                             ppr false)]
+condExpr :: String -> TextExpr -> TextExpr -> TextExpr
+condExpr cond true false = LeafExpr (cond ++ " ? " ++
+                                     showCommon true ++ " : " ++
+                                     showCommon false)
 
 -- | Convert any string having character other than a-z, A-Z, 0-9 and
 -- _ to escaped Verilog Identifier.
@@ -321,8 +333,8 @@ vId id
   | otherwise
   = ('\\':id) ++ " "
 
-varVId :: Var -> SDoc
-varVId = text . vId . (\v -> (getOccString $ varName v) ++ "_" ++ (show $ varUnique v))
+varVId :: Var -> String
+varVId = vId . (\v -> (getOccString $ varName v) ++ "_" ++ (show $ varUnique v))
 
 -- Operators and their precedences
 -- Unary !, ~, +, - : 14
@@ -340,24 +352,24 @@ varVId = text . vId . (\v -> (getOccString $ varName v) ++ "_" ++ (show $ varUni
 -- &&               :  2
 -- ||               :  1
 -- ?:               :  0
-opComplement = unarySDocFunc "~" 14
-opNot = unarySDocFunc "!" 14
-opNeg = unarySDocFunc "-" 14
-opBitNeg = unarySDocFunc "~" 14
-opMul = binarySDocFunc "*" 10
-opPlus = binarySDocFunc "+" 9
-opMinus = binarySDocFunc "-" 9
-opShL = binarySemiConst "<<" 8
-opShRA = binarySemiConst ">>>" 8
-opShRL = binarySemiConst ">>" 8
-opLt = binarySDocFunc "<" 7
-opLe = binarySDocFunc "<=" 7
-opGt = binarySDocFunc ">" 7
-opGe = binarySDocFunc ">=" 7
-opEq = binarySDocFunc "==" 6
-opNe = binarySDocFunc "!=" 6
-opBitAnd = binarySDocFunc "&" 5
-opXor = binarySDocFunc "^" 4
-opBitOr = binarySDocFunc "|" 3
-opAnd = binarySDocFunc "&&" 2
-opOr = binarySDocFunc "||" 1
+opComplement = unaryOp "~" 14
+opNot = unaryOp "!" 14
+opNeg = unaryOp "-" 14
+opBitNeg = unaryOp "~" 14
+opMul = binaryOp "*" 10
+opPlus = binaryOp "+" 9
+opMinus = binaryOp "-" 9
+opShL = binaryOp "<<" 8
+opShRA = binaryOp ">>>" 8
+opShRL = binaryOp ">>" 8
+opLt = binaryOp "<" 7
+opLe = binaryOp "<=" 7
+opGt = binaryOp ">" 7
+opGe = binaryOp ">=" 7
+opEq = binaryOp "==" 6
+opNe = binaryOp "!=" 6
+opBitAnd = binaryOp "&" 5
+opXor = binaryOp "^" 4
+opBitOr = binaryOp "|" 3
+opAnd = binaryOp "&&" 2
+opOr = binaryOp "||" 1

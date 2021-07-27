@@ -73,7 +73,7 @@ main = do
       -- Output result
       let top = syn (topBind param) $ mg_binds tidy
       (docs, vo) <- toSV top
-      let doc_str = showSDocUnsafe docs
+      let doc_str = showSDocUnsafe $ ppr docs
       case outputFile param of
         StandardOutF -> putStrLn doc_str
         DefaultOutF -> writeFile (getDefaultOutputFile $ targetFile param) doc_str

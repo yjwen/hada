@@ -3,7 +3,7 @@
 module Verilator (cppDriver, hsWrapper) where
 import Prelude hiding ((<>))
 import Syn(collectInputVars)
-import SynType(synType, cppr, hsppr)
+import SynType(SynType, synType, showC, showHS)
 import NameX(isInModule)
 import CoreSyn
 import Var
@@ -13,6 +13,9 @@ import Type(Type(..), splitTyConApp_maybe, tyConAppTyCon_maybe)
 import TyCon(TyCon(..), tyConName)
 import Module(Module(..))
 
+
+cppr :: SynType -> SDoc
+cppr = text . showC
 
 -- | Generate the content of the C++ driver file for the verilated
 -- function
@@ -88,6 +91,8 @@ ctypeBuiltin n
 indentBlock :: SDoc -> SDoc -> SDoc
 indentBlock head block = (head <+> lbrace) $+$ nest 2 block $+$ rbrace
 
+hsppr :: SynType -> SDoc
+hsppr = text . showHS
 -- | Content of the haskell wrapper for the C++ driver function
 hsWrapper ::
   String -> -- The module name
