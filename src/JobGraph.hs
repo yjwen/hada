@@ -2,7 +2,7 @@ module JobGraph ( JobRecord(..), ExactJR(..)
                 , JobGraph(..), todo, done
                 , isTodo, isDone
                 , jobEq, jobEqTodo, jobEqDone
-                , initTodo
+                , vertexTodo, vertexDone
                 , getResult
                 , hasDone
                 , addTodo, setDone, mustSetDone
@@ -62,8 +62,11 @@ type JobGraph j r = Graph (JobRecord j r)
 -- context-based. It might represents k depends on j being done, or k
 -- is derived from j, or both
 
-initTodo :: j -> JobGraph j r
-initTodo = vertex . todo
+vertexTodo :: j -> JobGraph j r
+vertexTodo = vertex . todo
+
+vertexDone :: j -> r -> JobGraph j r
+vertexDone j r = vertex (done j r)
 
 -- Get result of job j in the job graph
 getResult :: Eq j => j -> JobGraph j r -> Maybe r

@@ -8,7 +8,7 @@ doJob :: Int -> Int -> ([Int], String)
 doJob t j = (if j >= t then [] else [j + 1, j * 2 + 1], show j)
 
 
-initJG = initTodo 0
+initJG = vertexTodo 0
 
 testDoAllJobs0 = TestCase (assertEqual
                            ""
@@ -74,7 +74,7 @@ testDoAllJobs6 = TestCase (assertEqual
                                            (done 5 "5", done 11 "11")])
                            (map exactEdge $ edgeList $ doAllJobs (doJob 6) initJG))
 -- The example job graph used by tests
-jg = doAllJobs (doJob 6) $ initTodo 0
+jg = doAllJobs (doJob 6) $ vertexTodo 0
 
 type R = JobRecord Int String
 type ExactR = ExactJR Int String
@@ -132,7 +132,7 @@ testMustSetDone = TestCase (assertEqual
                             ""
                             [ExactJR (todo 0),
                              ExactJR (done 1 "1")]
-                            (map ExactJR $ vertexList (mustSetDone 1 "1" (initTodo 0))))
+                            (map ExactJR $ vertexList (mustSetDone 1 "1" (vertexTodo 0))))
 
 main = do counts <- runTestTT $ TestList [ testDoAllJobs0
                                          , testDoAllJobs1
