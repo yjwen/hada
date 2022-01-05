@@ -31,6 +31,12 @@ Executable hada
 --   Hs-source-dirs:      test
 --   Build-depends: base, Cabal > 1.9.2, hada
 
+Executable ir
+           Main-is: Main.hs
+           other-modules: SExpTokens, SExpSyntax, SExpEval
+           Hs-source-dirs: src/IR
+           Build-depends: base, directory, array, containers, mtl, transformers
+
 Test-Suite Test
            Type: detailed-0.9
            Test-module: Test
