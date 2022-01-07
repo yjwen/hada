@@ -1,5 +1,5 @@
 {
-module SExpTokens (Token(..), alexScanTokens) where
+module SExpTokens (Token(..), PrimeOp(..), alexScanTokens) where
 }
 
 %wrapper "basic"
@@ -13,17 +13,29 @@ $white+ ;
 \;.*    ;
 \( {\s -> LParen}
 \) {\s -> RParen}
-[\+\-\*] {\s -> PrimeOp (head s)}
+\+ {\s -> PrimeOp Plus}
+\- {\s -> PrimeOp Minus}
+\* {\s -> PrimeOp Times}
+\< {\s -> PrimeOp LessThan}
+"eq" {\s -> PrimeOp Equal}
+"not" {\s -> Negate}
+"and" {\s -> PrimeOp And}
+"or" {\s -> PrimeOp Or}
 "define" {\s -> Define}
+\#[tf] {\s -> BoolLiteral ((head . tail) s == 't')}
 [_$alpha][$alpha$digit\_]* {\s -> Symbol s}
-$digit+ {\s -> Value (read s)}
+$digit+ {\s -> IntLiteral (read s)}
 
 {
+data PrimeOp = Plus | Minus | Times | LessThan | Equal | And | Or
+             deriving Show
 data Token = LParen
            | RParen
            | Define
-           | PrimeOp Char
+           | PrimeOp PrimeOp
+           | Negate
            | Symbol String
-           | Value Int
+           | IntLiteral Int
+           | BoolLiteral Bool
            deriving Show
 }

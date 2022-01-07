@@ -1,6 +1,6 @@
 {
 module SExpSyntax where
-import SExpTokens (Token(..))
+import SExpTokens (Token(..), PrimeOp(..))
 }
 
 %name parse
@@ -12,8 +12,10 @@ import SExpTokens (Token(..))
 ')' { RParen }
 define { Define }
 primop {PrimeOp $$}
+negate {Negate}
 sym {Symbol $$}
-val {Value $$}
+intlit {IntLiteral $$}
+boollit {BoolLiteral $$}
 
 %%
 Prog :: { Prog }
@@ -27,17 +29,22 @@ DefineStat :: { DefineStat }
        : '(' define sym Exp ')' { DefineStat $3 $4 }
        
 Exp :: { Exp }
-    : val { ValueExp $1 }
-    | sym { SymbolExp $1 }
+    : intlit { IntLitExp $1 }
+    | boollit { BoolLitExp $1 }
     | '(' primop Exp Exp ')' { PrimeExp $2 $3 $4 }
+    | '(' negate Exp ')' { NegateExp $3 }
+    | sym { SymbolExp $1 }
+
 
 {
 data Prog = Prog [DefineStat] Exp deriving Show
 
 data DefineStat = DefineStat String Exp deriving Show
 
-data Exp = ValueExp Int
-         | PrimeExp Char Exp Exp
+data Exp = IntLitExp Int
+         | BoolLitExp Bool
+         | PrimeExp PrimeOp Exp Exp
+         | NegateExp Exp
          | SymbolExp String
          deriving Show
 
