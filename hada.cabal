@@ -33,7 +33,7 @@ Executable hada
 
 Executable ir
            Main-is: Main.hs
-           other-modules: SExpTokens, SExpSyntax, SExpEval
+           other-modules: SExpTokens, SExpSyntax, Syntax, Eval
            Hs-source-dirs: src/IR
            Build-depends: base, directory, array, containers, mtl, transformers
 

@@ -1,5 +1,6 @@
 {
 module SExpTokens (Token(..), PrimeOp(..), alexScanTokens) where
+import Syntax (PrimeOp(..))
 }
 
 %wrapper "basic"
@@ -22,18 +23,20 @@ $white+ ;
 "and" {\s -> PrimeOp And}
 "or" {\s -> PrimeOp Or}
 "define" {\s -> Define}
+"if" {\s -> If}
+"lambda" {\s -> Lambda}
 \#[tf] {\s -> BoolLiteral ((head . tail) s == 't')}
 [_$alpha][$alpha$digit\_]* {\s -> Symbol s}
 $digit+ {\s -> IntLiteral (read s)}
 
 {
-data PrimeOp = Plus | Minus | Times | LessThan | Equal | And | Or
-             deriving Show
 data Token = LParen
            | RParen
            | Define
            | PrimeOp PrimeOp
            | Negate
+           | If
+           | Lambda
            | Symbol String
            | IntLiteral Int
            | BoolLiteral Bool

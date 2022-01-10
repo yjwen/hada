@@ -2,7 +2,7 @@ import System.Environment (getArgs)
 import System.Directory (doesFileExist)
 import SExpTokens (alexScanTokens)
 import SExpSyntax (parse)
-import SExpEval (runProg)
+import Eval (runProg)
 import Data.Map.Strict(empty)
 
 main :: IO ()

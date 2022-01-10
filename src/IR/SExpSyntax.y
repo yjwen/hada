@@ -1,6 +1,7 @@
 {
 module SExpSyntax where
 import SExpTokens (Token(..), PrimeOp(..))
+import Syntax
 }
 
 %name parse
@@ -11,11 +12,13 @@ import SExpTokens (Token(..), PrimeOp(..))
 '(' { LParen }
 ')' { RParen }
 define { Define }
+if { If }
 primop {PrimeOp $$}
 negate {Negate}
 sym {Symbol $$}
 intlit {IntLiteral $$}
 boollit {BoolLiteral $$}
+lambda {Lambda}
 
 %%
 Prog :: { Prog }
@@ -34,20 +37,12 @@ Exp :: { Exp }
     | '(' primop Exp Exp ')' { PrimeExp $2 $3 $4 }
     | '(' negate Exp ')' { NegateExp $3 }
     | sym { SymbolExp $1 }
+    | '(' if Exp Exp Exp ')' {IfExp $3 $4 $5}
+    | '(' lambda sym Exp ')' {LambdaExp $3 $4}
+    | '(' Exp Exp ')' {AppExp $2 $3}
 
 
 {
-data Prog = Prog [DefineStat] Exp deriving Show
-
-data DefineStat = DefineStat String Exp deriving Show
-
-data Exp = IntLitExp Int
-         | BoolLitExp Bool
-         | PrimeExp PrimeOp Exp Exp
-         | NegateExp Exp
-         | SymbolExp String
-         deriving Show
-
 parseError :: [Token] -> a
 parseError _ = error "Parse error"
 }
