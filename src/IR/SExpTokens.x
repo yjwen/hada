@@ -27,7 +27,7 @@ $white+ ;
 "lambda" {\s -> Lambda}
 \#[tf] {\s -> BoolLiteral ((head . tail) s == 't')}
 [_$alpha][$alpha$digit\_]* {\s -> Symbol s}
-$digit+ {\s -> IntLiteral (read s)}
+\-?$digit+ {\s -> IntLiteral (read s)}
 
 {
 data Token = LParen

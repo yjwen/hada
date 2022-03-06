@@ -1,0 +1,4 @@
+(define a #t)
+(define b #f)
+;; Compute a `xor` b
+(or (and a (not b)) (and (not a) b))

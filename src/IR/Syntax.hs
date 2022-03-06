@@ -1,4 +1,5 @@
-module Syntax (PrimeOp(..), Prog(..), DefineStat(..), Exp(..)) where
+module Syntax ( PrimeOp(..), Prog(..), DefineStat(..), Exp(..)
+              , reducible) where
 
 data PrimeOp = Plus | Minus | Times | LessThan | Equal | And | Or
              deriving Show
@@ -17,3 +18,10 @@ data Exp = IntLitExp Int
          | AppExp Exp Exp
          deriving Show
 
+
+reducible :: Exp -> Bool
+reducible e = case e of
+                IntLitExp _ -> False
+                BoolLitExp _ -> False
+                LambdaExp _ _ -> False
+                otherwise -> True
