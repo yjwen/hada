@@ -1,0 +1,5 @@
+(define modulo
+  (lambda x
+    (lambda y
+      (if (< x y) x ((modulo (- x y)) y)))))
+(eq ((modulo 27) 5) 2)

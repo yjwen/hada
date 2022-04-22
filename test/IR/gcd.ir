@@ -1,0 +1,14 @@
+(define modulo
+  (lambda x
+    (lambda y
+      (if (< x y) x ((modulo (- x y)) y)))))
+
+(define gcd
+  (lambda x
+    (lambda y
+      (if (eq y 0)
+          x
+          ((gcd y) ((modulo x) y))))))
+
+(and (eq ((gcd 10) 5) 5)
+     (eq ((gcd 5) 7) 1))

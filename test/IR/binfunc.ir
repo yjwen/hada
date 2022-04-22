@@ -1,0 +1,5 @@
+(define plus
+  (lambda x
+    (lambda y (+ x y))))
+
+(eq ((plus 1) 2) 3)
