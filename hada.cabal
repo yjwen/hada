@@ -45,6 +45,14 @@ Test-Suite test-ir-syntax
            Hs-source-dirs: test, src/IR
            Build-depends: base, directory, array, containers, mtl, transformers, HUnit
 
+Test-Suite test-type-infer
+           Type: exitcode-stdio-1.0
+           Main-is: TestTypeInfer.hs
+           other-modules: TypeTokens, TypeSyntax, Type, SExpTokens, SExpSyntax, Syntax, InferType
+           Default-language: Haskell2010
+           Hs-source-dirs: test, src/IR
+           Build-depends: base, directory, array, containers, mtl, HUnit
+
 -- test-suite TestShell
 --            type: exitcode-stdio-1.0
 --            main-is: TestShell.hs

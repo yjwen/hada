@@ -1,0 +1,3 @@
+int
+(define s 1)
+s

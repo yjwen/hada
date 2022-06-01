@@ -1,0 +1,2 @@
+int->int->int->bool
+(lambda x (lambda y (lambda z (and (not (eq z y)) (or (eq x y) (< x y))))))

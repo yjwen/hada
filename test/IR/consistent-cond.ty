@@ -1,0 +1,2 @@
+int->int
+(lambda x (if #t 1 x))

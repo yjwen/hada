@@ -4,9 +4,13 @@ module Syntax ( PrimeOp(..), Prog(..), DefineStat(..), Exp(..)
 data PrimeOp = Plus | Minus | Times | LessThan | Equal | And | Or
              deriving Show
 
-data Prog = Prog [DefineStat] Exp deriving Show
+data Prog = Prog { progDefs :: [DefineStat]
+                 , progExp :: Exp
+                 } deriving Show
 
-data DefineStat = DefineStat String Exp deriving Show
+data DefineStat = DefineStat { defSym :: String
+                             , defExp :: Exp
+                             } deriving Show
 
 data Exp = IntLitExp Int
          | BoolLitExp Bool

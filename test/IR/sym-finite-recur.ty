@@ -1,0 +1,7 @@
+int->int->int
+(define divide
+  (lambda x (lambda y
+              (if (< x y)
+                  0
+                  (+ 1 ((divide (- x y)) y))))))
+divide

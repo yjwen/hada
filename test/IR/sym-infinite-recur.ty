@@ -1,0 +1,3 @@
+any->any
+(define f (lambda x (f x)))
+f

@@ -1,0 +1,2 @@
+int->int->int->int->int
+(lambda x (lambda y (lambda z (lambda w (* w (- z (+ x y)))))))

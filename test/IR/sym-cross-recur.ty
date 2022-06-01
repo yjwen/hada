@@ -1,0 +1,4 @@
+int->int
+(define a (lambda x (b x)))
+(define b (lambda x (if (< 0 x) (a x) 0)))
+b
